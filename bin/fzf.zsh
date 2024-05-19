@@ -61,7 +61,6 @@ elif ! [[ $KITTY_WINDOW_ID ]] && (( FZF_PREVIEW_TOP + FZF_PREVIEW_LINES == $(stt
   dim=${FZF_PREVIEW_COLUMNS}x$((FZF_PREVIEW_LINES - 1))
 fi
 
-echo $dim
 # 1. Use kitty icat on kitty terminal
 if [[ $KITTY_WINDOW_ID ]]; then
   # 1. 'memory' is the fastest option but if you want the image to be scrollable,
@@ -74,7 +73,7 @@ if [[ $KITTY_WINDOW_ID ]]; then
 
 # 2. Use chafa with Sixel output
 elif command -v chafa > /dev/null; then
-  chafa -f sixel -s "$dim" "$file"
+  chafa -s "$dim" "$file"
   # Add a new line character so that fzf can display multiple images in the preview window
   echo
 
