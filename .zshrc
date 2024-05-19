@@ -7,7 +7,7 @@ fi
 
 ZSH_THEME="powerlevel10k/powerlevel10k"
 # If you come from bash you might have to change  your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
+export PATH=$HOME/bin:/usr/local/bin:$PATH
 local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
 
 # Path to your oh-my-zsh installation.
@@ -145,7 +145,7 @@ local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
 "
 # Completion styling
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+# zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' menu no
 # zstyle ':fzf-tab:*' show-group full
 
@@ -164,26 +164,36 @@ fzf_preview() {
   esac
 }
 
-# fzf --preview='$(fzf_preview {}} {}'
+#for when running  ** anything
+_fzf_comprun() {
+  local command=$1
+  shift
 
-zstyle ':fzf-tab:complete:cd:*' fzf-preview $LSD_COMMAND_PREVIEW
-zstyle ':fzf-tab:complete:__zoxside_z:*' fzf-preview $LSD_COMMAND_PREVIEW
-zstyle ':fzf-tab:complete:z:*' fzf-preview $LSD_COMMAND_PREVIEW
-zstyle ':fzf-tab:complete:ls:*' fzf-preview $LSD_COMMAND_PREVIEW
+  case \
+   "$" in cd|z|zoxide|ls|lsd) fzf --preview 'lsd --tree --depth 1 --group-directories-first --color=always --icon=always {}'  "$@" ;; \
+   export|unset) fzf --preview "eval 'echo \$'{}"         "$@" ;; \
+   ssh)          fzf --preview 'dig {}'                   "$@" ;; \
+    *)            fzf --preview 'bat -n --color=always {}' "$@" ;;  \
+  esac
+}
 
-# zstyle ':fzf-tab:complete:cat:*' extra-opts --preview=fzf_previw  --preview-window=right:50%
-zstyle ':fzf-tab:complete:cat:*' fzf-preview $CAT_COMMAND_PREVIEW
+compdef _gnu_generic fzf
+compdef _gnu_generic lsd
+compdef _gnu_generic pip
+compdef _gnu_generic bat
+# compdef _gnu_generic ssh
 
-zstyle ':fzf-tab:complete:bat:*' fzf-preview $CAT_COMMAND_PREVIEW
+
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:__zoxside_z:*'fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:z:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:ls:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:lsd:*' fzf-preview 'fzf.zsh $realpath'
+
+zstyle ':fzf-tab:complete:cat:*' fzf-preview 'fzf.zsh $realpath'
+
+zstyle ':fzf-tab:complete:bat:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
-
-
-
-# zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'lsd -d {}'$sanitized_in --preview-window=right:40%
-
-# zstyle ':fzf-tab:complete:__zoxide_z:*' extra-opts --preview=$extract'lsd -d {}'$sanitized_in --preview-window=right:40%
-
-# zstyle ':fzf-tab:complete:z:*' fzf-preview 'ls --color $realpath'
 
 
 # Aliases
