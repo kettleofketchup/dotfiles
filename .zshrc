@@ -8,6 +8,7 @@ fi
 ZSH_THEME="powerlevel10k/powerlevel10k"
 # If you come from bash you might have to change  your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
+local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
 
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -16,7 +17,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
+# ZSH_THEME="robbyrussell"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -78,7 +79,7 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-syntax-highlighting zsh-autosuggestions fzf-tab)
+plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git)
 autoload -Uz compinit && compinit
 
 
@@ -138,26 +139,58 @@ setopt hist_save_no_dups
 setopt hist_ignore_dups
 setopt hist_find_no_dups
 
-
+local extract="
+in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+"
 # Completion styling
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' menu no
-#zstyle ':fzf-tab:complete:cd:*' fzf --preview 'lsd  {}'
-#zstyle ':fzf-tab:complete:__zoxide_z:*' fzf --preview 'lsd {}'
-# zstyle ':fzf-tab:complete:bat:*' fzf --preview 'bat --style=numbers --color=always --line-range :500 {}'
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
-zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
-zstyle ':fzf-tab:complete:z:*' fzf-preview 'ls --color $realpath'
+# zstyle ':fzf-tab:*' show-group full
 
-zstyle ':fzf-tab:complete:ls:*' fzf-preview 'ls --color $realpath'
-zstyle ':fzf-tab:complete:lsd:*' fzf-preview 'ls --color $realpath'
+# zstyle ':fzf-tab:*' single-group full
+# zstyle ':fzf-tab:*' prefix ''
+# bindkey '\t' expand-or-complete # fzf-tab reads it during initialization
+LSD_COMMAND_PREVIEW='lsd --tree --depth 1 --group-directories-first --color=always --icon=always $realpath'
+CAT_COMMAND_PREVIEW='bat --pager=never --color=always --line-range 0:30 $realpath'
+
+fzf_preview() {
+  if [ -d $1 ]; then echo $LSD_COMMAND_PREVIEW; return; fi
+  case $1 in
+    *.jpg|*.jpeg|*.png|*.gif) echo 'svix -a' ;;
+
+    
+  esac
+}
+
+# fzf --preview='$(fzf_preview {}} {}'
+
+zstyle ':fzf-tab:complete:cd:*' fzf-preview $LSD_COMMAND_PREVIEW
+zstyle ':fzf-tab:complete:__zoxside_z:*' fzf-preview $LSD_COMMAND_PREVIEW
+zstyle ':fzf-tab:complete:z:*' fzf-preview $LSD_COMMAND_PREVIEW
+zstyle ':fzf-tab:complete:ls:*' fzf-preview $LSD_COMMAND_PREVIEW
+
+# zstyle ':fzf-tab:complete:cat:*' extra-opts --preview=fzf_previw  --preview-window=right:50%
+zstyle ':fzf-tab:complete:cat:*' fzf-preview $CAT_COMMAND_PREVIEW
+
+zstyle ':fzf-tab:complete:bat:*' fzf-preview $CAT_COMMAND_PREVIEW
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+
+
+
+# zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'lsd -d {}'$sanitized_in --preview-window=right:40%
+
+# zstyle ':fzf-tab:complete:__zoxide_z:*' extra-opts --preview=$extract'lsd -d {}'$sanitized_in --preview-window=right:40%
+
+# zstyle ':fzf-tab:complete:z:*' fzf-preview 'ls --color $realpath'
+
 
 # Aliases
-alias ls='lsd --group-directories-first'
+alias ls='lsd --group-directories-first --color=always --icon=always'
 alias vim='nvim'
 alias c='clear'
-alias cat='bat'
+alias cat='bat --style="grid,header"'
 alias z='zoxide'
 # Shell integrations
 eval "$(fzf --zsh)"
