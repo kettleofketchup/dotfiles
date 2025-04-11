@@ -79,8 +79,8 @@ export ZSH="$HOME/.oh-my-zsh"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git)
 autoload -Uz compinit && compinit
+plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git invoke npm)
 
 
 source $ZSH/oh-my-zsh.sh
@@ -110,7 +110,6 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 # Generated for envman. Do not edit.
 [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
@@ -203,5 +202,5 @@ alias c='clear'
 alias cat='bat --style="grid,header"'
 alias z='zoxide'
 # Shell integrations
-eval "$(fzf --zsh)"
-eval "$(zoxide init --cmd cd zsh)"
+# eval "$(fzf --zsh)"
+eval "$(zoxide init zsh)"
