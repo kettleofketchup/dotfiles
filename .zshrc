@@ -80,7 +80,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 autoload -Uz compinit && compinit
-plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git invoke npm)
+plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git invoke npm tmux)
 
 
 source $ZSH/oh-my-zsh.sh
@@ -204,3 +204,16 @@ alias z='zoxide'
 # Shell integrations
 # eval "$(fzf --zsh)"
 eval "$(zoxide init zsh)"
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+
+if [ -f "$HOME/.cargo/env" ]; then
+  source "$HOME/.cargo/env"
+fi
+
+if command -v zellij >/dev/null 2>&1; then
+  zellij
+fi
