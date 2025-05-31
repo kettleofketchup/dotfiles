@@ -5,7 +5,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-ZSH_THEME="powerlevel10k/powerlevel10k"
+#ZSH_THEME="powerlevel10k/powerlevel10k"
 # If you come from bash you might have to change  your $PATH.
 export PATH=$HOME/bin:/usr/local/bin:$PATH
 local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
@@ -214,6 +214,16 @@ if [ -f "$HOME/.cargo/env" ]; then
   source "$HOME/.cargo/env"
 fi
 
-if command -v zellij >/dev/null 2>&1; then
-  zellij
-fi
+#if command -v zellij >/dev/null 2>&1; then
+ # eval "$(zellij setup --generate-auto-start zsh)"
+#fi
+
+#echo 'eval "$(zellij setup --generate-auto-start zsh)"' >> ~/.zshrc
+
+
+if command -v oh-my-posh  >/dev/null 2>&1; then
+  eval "$(oh-my-posh init zsh --config ~/.omp.json)"
+fi                                                                                       
+                      
+
+#eval "$(zellij setup --generate-auto-start zsh)"
