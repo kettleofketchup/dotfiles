@@ -14,3 +14,8 @@ git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${ZSH_CUSTOM:-
 # Install autoenv
 wget --show-progress -o /dev/null -O- 'https://raw.githubusercontent.com/hyperupcall/autoenv/main/scripts/install.sh' | sh
 
+
+
+
+
+cargo install --git https://github.com/lsd-rs/lsd.git --branch master
