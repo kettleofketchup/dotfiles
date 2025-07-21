@@ -5,6 +5,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 sudo dpkg -i bin/*.deb 
 cargo install --locked zellij
 curl -s https://ohmyposh.dev/install.sh | bash -s
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
 
 stow . 
 

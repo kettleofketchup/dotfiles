@@ -232,3 +232,4 @@ source '/home/kettle/.nvm/versions/node/v22.14.0/lib/node_modules/@hyperupcall/a
 
 export AUTOENV_ENABLE_LEAVE=yes
 export AUTOENV_VIEWER=cat
+export PATH="$HOME/.local/bin:$PATH"
