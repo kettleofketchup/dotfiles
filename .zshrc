@@ -80,7 +80,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 autoload -Uz compinit && compinit
-plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git invoke npm tmux uv autoenv)
+plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git invoke npm tmux uv)
 
 
 source $ZSH/oh-my-zsh.sh
@@ -228,3 +228,7 @@ fi
 
 #eval "$(zellij setup --generate-auto-start zsh)"
 source '/home/kettle/.nvm/versions/node/v22.14.0/lib/node_modules/@hyperupcall/autoenv/activate.sh'
+
+
+export AUTOENV_ENABLE_LEAVE=yes
+export AUTOENV_VIEWER=cat

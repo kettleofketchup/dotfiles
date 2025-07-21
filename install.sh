@@ -2,6 +2,7 @@ sudo apt install ruby-full curl git build-essential stow zsh -y
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
+sudo dpkg -i bin/*.deb 
 cargo install --locked zellij
 curl -s https://ohmyposh.dev/install.sh | bash -s
 
@@ -18,4 +19,4 @@ wget --show-progress -o /dev/null -O- 'https://raw.githubusercontent.com/hyperup
 
 
 
-cargo install --git https://github.com/lsd-rs/lsd.git --branch master
+cargo install lsd
