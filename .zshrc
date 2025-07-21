@@ -227,7 +227,6 @@ fi
                       
 
 #eval "$(zellij setup --generate-auto-start zsh)"
-source '/home/kettle/.nvm/versions/node/v22.14.0/lib/node_modules/@hyperupcall/autoenv/activate.sh'
 
 
 export AUTOENV_ENABLE_LEAVE=yes
