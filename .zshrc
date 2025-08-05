@@ -203,7 +203,7 @@ alias cat='bat --style="grid,header"'
 alias z='zoxide'
 # Shell integrations
 # eval "$(fzf --zsh)"
-eval "$(zoxide init zsh)"
+eval "$(zoxide init --cmd z zsh)"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
