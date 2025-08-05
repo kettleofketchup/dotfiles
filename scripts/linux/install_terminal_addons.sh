@@ -19,6 +19,9 @@ bash ~/.fzf/install --bin
 
 
 
+
 npm install --global autoenv
 
 cargo install lsd
+
+./scripts/universal/install_bat.sh

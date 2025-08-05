@@ -3,3 +3,4 @@
 .tmux/plugins/tmux-power
 .tmux/plugins/tpm
 .oh-my-zsh
+.tmux-client-*.log

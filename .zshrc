@@ -14,11 +14,6 @@ local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
 export ZSH="$HOME/.oh-my-zsh"
 
 
-if [[ ! "$PATH" == *$HOME/.fzf/bin* ]]; then
-  PATH="${PATH:+${PATH}:}$HOME/.fzf/bin"
-fi
-
-source <(fzf --zsh)
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -86,9 +81,13 @@ source <(fzf --zsh)
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-autoload -Uz compinit && compinit
-plugins=(fzf-tab zsh-syntax-highlighting zsh-autosuggestions git invoke npm tmux uv)
+plugins=(fzf-tab fzf tmux zsh-syntax-highlighting zsh-autosuggestions git invoke npm tmux uv ssh sudo
+docker-compose docker
+copyfile
 
+)
+
+autoload -Uz compinit && compinit
 
 source $ZSH/oh-my-zsh.sh
 
@@ -151,43 +150,62 @@ local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
 "
 # Completion styling
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
-# zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+
 zstyle ':completion:*' menu no
+zstyle ':fzf-tab:*' switch-group '<' '>'
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+
+
 # zstyle ':fzf-tab:*' show-group full
 
 # zstyle ':fzf-tab:*' single-group full
 # zstyle ':fzf-tab:*' prefix ''
 # bindkey '\t' expand-or-complete # fzf-tab reads it during initialization
+
+
 LSD_COMMAND_PREVIEW='lsd --tree --depth 1 --group-directories-first --color=always --icon=always $realpath'
 CAT_COMMAND_PREVIEW='bat --pager=never --color=always --line-range 0:30 $realpath'
-
-fzf_preview() {
-  if [ -d $1 ]; then echo $LSD_COMMAND_PREVIEW; return; fi
-  case $1 in
-    *.jpg|*.jpeg|*.png|*.gif) echo 'svix -a' ;;
-
-    
-  esac
-}
-
-#for when running  ** anything
-_fzf_comprun() {
-  local command=$1
-  shift
-
-  case \
-   "$" in cd|z|zoxide|ls|lsd) fzf --preview 'lsd --tree --depth 1 --group-directories-first --color=always --icon=always {}'  "$@" ;; \
-   export|unset) fzf --preview "eval 'echo \$'{}"         "$@" ;; \
-   ssh)          fzf --preview 'dig {}'                   "$@" ;; \
-    *)            fzf --preview 'bat -n --color=always {}' "$@" ;;  \
-  esac
-}
 
 compdef _gnu_generic fzf
 compdef _gnu_generic lsd
 compdef _gnu_generic pip
 compdef _gnu_generic bat
+
+export FZF_DEFAULT_OPTS="--preview='$HOME/bin/fzf.zsh {}' --height=100% --preview-window=right:40% --header='[CTRL-c or ESC to quit] | [CTRL-ALT-p: Toggle Preview]' --preview-label='File Preview [CTRL-ALT-P to hide]' --preview-label-pos='3:bottom' --bind='ctrl-alt-p:toggle-preview'"
+
+FZF_PREVIEW_ZSTYLE="fzf-preview 'fzf.zsh $realpath'"
+
+
+command -v ag > /dev/null && export FZF_DEFAULT_COMMAND='ag'
+#for when running  ** anything
+# _fzf_comprun() {
+#   local command=$1
+#   shift
+
+#   case \
+#    "$" in cd|z|zoxide|ls|lsd) fzf --preview 'lsd --tree --depth 1 --group-directories-first --color=always --icon=always {}'  "$@" ;; \
+#    export|unset) fzf --preview "eval 'echo \$'{}"         "$@" ;; \
+#    ssh)          fnzf --preview 'dig {}'                   "$@" ;; \
+#     *)            fzf --preview 'bat -n --color=always {}' "$@" ;;  \
+#   esac
+# }
+
+
+
+
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+
+zstyle ':fzf-tab:*' popup-min-size 400 400
+
+zstyle ':fzf-tab:complete:mv:*' fzf-preview 'fzf.zsh $realpath'
+
 # compdef _gnu_generic ssh
+
+
 zstyle ':fzf-tab:complete:ln:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:file:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:mv:*' fzf-preview 'fzf.zsh $realpath'
@@ -212,7 +230,12 @@ source ~/.aliases.zsh
 # Shell integrations
 
 
-ZOXIDE_CMD_OVERRIDES=z
+if [[ ! "$PATH" == */$HOME/.fzf/bin* ]]; then
+  PATH="${PATH:+${PATH}:}/$HOME/.fzf/bin"
+fi
+
+
+
 eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd z zsh)"
 
@@ -260,3 +283,4 @@ fi
 if ! grep -q '@hyperupcall/autoenv/activate.sh' "${ZDOTDIR:-$HOME}/.zprofile.local" 2>/dev/null; then
   printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
 fi
+

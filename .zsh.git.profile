@@ -9,4 +9,9 @@ export AUTOENV_VIEWER=cat
 
 export PATH="$HOME/.local/bin:$PATH"
 
+export PATH="$HOME/bin:$PATH"
 
+export ZOXIDE_CMD_OVERRIDE=z
+export ZSH_TMUX_AUTO_START=true
+export ZSH_TMUX_AUTOSTART_ONCE=false
+export ZSH_TMUX_AUTOCONNECT=true
