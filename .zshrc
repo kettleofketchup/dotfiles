@@ -13,6 +13,13 @@ local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+
+if [[ ! "$PATH" == *$HOME/.fzf/bin* ]]; then
+  PATH="${PATH:+${PATH}:}$HOME/.fzf/bin"
+fi
+
+source <(fzf --zsh)
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
@@ -181,10 +188,13 @@ compdef _gnu_generic lsd
 compdef _gnu_generic pip
 compdef _gnu_generic bat
 # compdef _gnu_generic ssh
-
-
+zstyle ':fzf-tab:complete:ln:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:file:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:mv:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:pip:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:__zoxside_z:*'fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:zoxide:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:z:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:ls:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:lsd:*' fzf-preview 'fzf.zsh $realpath'
@@ -192,23 +202,33 @@ zstyle ':fzf-tab:complete:lsd:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:cat:*' fzf-preview 'fzf.zsh $realpath'
 
 zstyle ':fzf-tab:complete:bat:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYTSTEMD_COLORS=1 systemctl status $word'
 zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
 
 # Aliases
-alias ls='lsd --group-directories-first --color=always --icon=always'
-alias vim='nvim'
-alias c='clear'
-alias cat='bat --style="grid,header"'
-alias z='zoxide'
+source ~/.aliases.zsh
+
 # Shell integrations
-# eval "$(fzf --zsh)"
+
+
+ZOXIDE_CMD_OVERRIDES=z
+eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd z zsh)"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
+
+if [ -f "$HOME/.zsh.git.profile" ]; then
+  source "$HOME/.zsh.git.profile"
+fi
+
+
+if [ -f "$HOME/.zsh.local.profile" ]; then
+  source "$HOME/.zsh.local.profile"
+fi
 
 if [ -f "$HOME/.cargo/env" ]; then
   source "$HOME/.cargo/env"
@@ -229,6 +249,14 @@ fi
 #eval "$(zellij setup --generate-auto-start zsh)"
 
 
-export AUTOENV_ENABLE_LEAVE=yes
-export AUTOENV_VIEWER=cat
-export PATH="$HOME/.local/bin:$PATH"
+
+
+
+
+
+#source local file if it exists
+
+
+if ! grep -q '@hyperupcall/autoenv/activate.sh' "${ZDOTDIR:-$HOME}/.zprofile.local" 2>/dev/null; then
+  printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
+fi

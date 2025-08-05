@@ -1,0 +1,12 @@
+debs
+.git
+software
+fonts
+binaries
+scripts
+build.sh
+install.sh
+tiktok_token
+github_mirrors.txt
+.gitignore
+README.md
