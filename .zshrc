@@ -81,7 +81,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(fzf-tab fzf tmux zsh-syntax-highlighting zsh-autosuggestions git invoke npm tmux uv ssh sudo
+plugins=(fzf-tab fzf tmux zsh-syntax-highlighting zsh-autosuggestions autoenv git npm tmux uv ssh sudo
 docker-compose docker
 copyfile
 
@@ -272,10 +272,9 @@ fi
 #eval "$(zellij setup --generate-auto-start zsh)"
 
 
-
-
-
-
+if [ -f "$HOME/bin/.invoke.zsh" ]; then
+  source "$HOME/bin/.invoke.zsh"
+fi
 
 #source local file if it exists
 
