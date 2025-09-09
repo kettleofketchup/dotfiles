@@ -249,6 +249,9 @@ if [ -f "$HOME/.zsh.git.profile" ]; then
 fi
 
 
+export PATH=$PATH:/usr/local/go/bin
+
+
 if [ -f "$HOME/.zsh.local.profile" ]; then
   source "$HOME/.zsh.local.profile"
 fi
