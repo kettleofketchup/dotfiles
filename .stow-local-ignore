@@ -10,3 +10,7 @@ tiktok_token
 github_mirrors.txt
 .gitignore
 README.md
+.vscode
+.github
+.invoke.yaml
+.venv

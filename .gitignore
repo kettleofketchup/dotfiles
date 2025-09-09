@@ -4,3 +4,6 @@
 .tmux/plugins/tpm
 .oh-my-zsh
 .tmux-client-*.log
+
+*.pyc
+.venv/
