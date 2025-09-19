@@ -282,7 +282,11 @@ fi
 #source local file if it exists
 
 
-if ! grep -q '@hyperupcall/autoenv/activate.sh' "${ZDOTDIR:-$HOME}/.zprofile.local" 2>/dev/null; then
-  printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
-fi
+# if ! grep -q '@hyperupcall/autoenv/activate.sh' "${ZDOTDIR:-$HOME}/.zprofile.local" 2>/dev/null; then
+#   printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
+# fi
 
+
+
+
+source /home/codexuser/.config/kettle/kettle.zshrc

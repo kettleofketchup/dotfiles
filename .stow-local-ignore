@@ -11,6 +11,8 @@ github_mirrors.txt
 .gitignore
 README.md
 .vscode
+build.sh
 .github
 .invoke.yaml
 .venv
+src/
