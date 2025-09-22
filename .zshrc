@@ -1,64 +1,160 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+
+
+### Added by Zinit's installer
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
+    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
+        print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        print -P "%F{160} The clone has failed.%f%b"
 fi
 
-#ZSH_THEME="powerlevel10k/powerlevel10k"
-# If you come from bash you might have to change  your $PATH.
+
+
+# Load zinit
+source ${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git/zinit.zsh
+zinit light-mode for \
+    zdharma-continuum/zinit-annex-as-monitor \
+    zdharma-continuum/zinit-annex-bin-gem-node \
+    zdharma-continuum/zinit-annex-patch-dl \
+    zdharma-continuum/zinit-annex-rust
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# Load a few important annexes, without Turbo
+# (this is currently required for annexes)
+
+
+
+
+### End of Zinit's installer chunk
 export PATH=$HOME/bin:/usr/local/bin:$PATH
 local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
 
-# Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
 
 
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time oh-my-zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-# ZSH_THEME="robbyrussell"
+setopt promptsubst
+PS1="READY >" # provide a simple prompt till the theme loads
 
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+zinit as"null" wait lucid from"gh-r" for \
+    sbin"lsd"     lsd-rs/lsd \
+    sbin"fd"      @sharkdp/fd \
+    sbin"bat"     @sharkdp/bat \
+    sbin"fzf"     junegunn/fzf \
+
+zinit for \
+    as'null' \
+    configure'--disable-utf8proc --prefix=$PWD --quiet' \
+    make'PREFIX=$PWD --quiet install'\
+    sbin \
+  @tmux/tmux
+
+zinit for \
+    as'null' \
+    cmake'.' \
+    make'install' \
+    sbin \
+  @posva/catimg
+
+
+  
+zinit wait"1" lucid for \
+    zdharma-continuum/fast-syntax-highlighting \
+    "zap-zsh/fzf" \
+    OMZP::git \
+    "Aloxaf/fzf-tab" \
+    zsh-users/zsh-completions \
+    zsh-users/zsh-autosuggestions \
+    urbainvaes/fzf-marks \
+    olets/zsh-transient-prompt
+
+
+
+zinit wait"1" lucid for \
+  as"completion" \
+        OMZP::docker/completions/_docker \
+        OMZP::docker-compose/_docker-compose \
+        OMZP::ssh \
+        "Aloxaf/fzf-tab" \
+        OMZP::npm \
+        OMZP::uv \
+        OMZP::colored-man-pages \
+
+
+zinit ice wait"2" lucid for \
+  "hlissner/zsh-autopair" \
+  "zap-zsh/vim" \
+  "zap-zsh/supercharge" \
+  "zsh-users/zsh-history-substring-search" \
+  OMZ::lib/clipboard.zsh \
+
+zinit ice depth=1 id-as"tpm" lucid \
+    atclone"mkdir -p ~/.tmux/plugins && ln -sfn $PWD ~/.tmux/plugins/tpm" \
+    atpull'!git -C ~/.tmux/plugins/tpm pull --ff-only'
+zinit load tmux-plugins/tpm
+
+
+zinit ice depth=1 id-as"tpm" lucid \
+    atclone"mkdir -p ~/.tmux/plugins && ln -sfn $PWD ~/.tmux/plugins/tpm" \
+    atpull'!git -C ~/.tmux/plugins/tpm pull --ff-only'
+zinit load tmux-plugins/tpm
+
+
+zsnippet_reload() {
+  local file="$1"
+  local id="${2:-${file:t}}"
+  local stamp="${file:h}/.${id}-stamp"
+
+  zinit ice id-as"$id" \
+      atload"[[ $file -nt $stamp ]] && { source $file; touch $stamp; }"
+  zinit snippet "$file"
+
+}
+TRANSIENT_PROMPT_TRANSIENT_PROMPT="%B%(?.%F{green}❯.%F{red}❯)%f%b "
+
+
+
+# zinit load "zap-zsh/atmachine"
+source ~/.config/zsh/aliases.zsh
+source  ~/.config/zsh/exports.zsh
+
+
+
+autoload -U compinit; compinit
+
+
+
+
+# Shell integrations
+
+
+
 
 # Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
+CASE_SENSITIVE="false"
 
 # Uncomment the following line to use hyphen-insensitive completion.
 # Case-sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
+HYPHEN_INSENSITIVE="true"
 
-# Uncomment one of the following lines to change the auto-update behavior
-# zstyle ':omz:update' mode disabled  # disable automatic updates
-# zstyle ':omz:update' mode auto      # update automatically without asking
-# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
 
-# Uncomment the following line to change how often to auto-update (in days).
-# zstyle ':omz:update' frequency 13
 
 # Uncomment the following line if pasting URLs and other text is messed up.
 # DISABLE_MAGIC_FUNCTIONS="true"
 
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
 
 # Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
+DISABLE_AUTO_TITLE="false"
 
 # Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
+ENABLE_CORRECTION="true"
 
 # Uncomment the following line to display red dots whilst waiting for completion.
 # You can also set it to another string to have that shown instead of the default red dots.
 # e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
 # Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
-# COMPLETION_WAITING_DOTS="true"
+COMPLETION_WAITING_DOTS="true"
 
 # Uncomment the following line if you want to disable marking untracked files
 # under VCS as dirty. This makes repository status check for large repositories
@@ -81,15 +177,14 @@ export ZSH="$HOME/.oh-my-zsh"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(fzf-tab fzf tmux zsh-syntax-highlighting zsh-autosuggestions autoenv git npm tmux uv ssh sudo
-docker-compose docker
-copyfile
+# plugins=(fzf-tab fzf tmux zsh-syntax-highlighting zsh-autosuggestions autoenv git npm tmux uv ssh sudo
+# docker-compose docker
+# copyfile
 
-)
+# )
 
-autoload -Uz compinit && compinit
 
-source $ZSH/oh-my-zsh.sh
+# source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
@@ -118,17 +213,17 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 # Generated for envman. Do not edit.
-[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+# [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+# [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 
 # Keybindings
-bindkey -e
-bindkey '^p' history-search-backward
-bindkey '^n' history-search-forward
-bindkey '^[w' kill-region
+# bindkey -e
+# bindkey '^p' history-search-backward
+# bindkey '^n' history-search-forward
+# bindkey '^[w' kill-region
 
 
 # History
@@ -156,7 +251,6 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
 
 zstyle ':completion:*' menu no
-zstyle ':fzf-tab:*' switch-group '<' '>'
 zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
 
@@ -165,6 +259,7 @@ zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 # zstyle ':fzf-tab:*' single-group full
 # zstyle ':fzf-tab:*' prefix ''
 # bindkey '\t' expand-or-complete # fzf-tab reads it during initialization
+
 
 
 LSD_COMMAND_PREVIEW='lsd --tree --depth 1 --group-directories-first --color=always --icon=always $realpath'
@@ -196,12 +291,15 @@ command -v ag > /dev/null && export FZF_DEFAULT_COMMAND='ag'
 
 
 
+zstyle ':fzf-tab:*' use-fzf-default-opts yes
+# switch group using `<` and `>`
+zstyle ':fzf-tab:*' switch-group '<' '>'
 
 zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
 zstyle ':fzf-tab:*' popup-min-size 400 400
 
-zstyle ':fzf-tab:complete:mv:*' fzf-preview 'fzf.zsh $realpath'
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
 # compdef _gnu_generic ssh
 
@@ -224,41 +322,9 @@ zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYTSTEMD_COLORS=1 systemct
 zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
 
-# Aliases
-source ~/.aliases.zsh
-
-# Shell integrations
-
-
-if [[ ! "$PATH" == */$HOME/.fzf/bin* ]]; then
-  PATH="${PATH:+${PATH}:}/$HOME/.fzf/bin"
-fi
-
-
-
-eval "$(fzf --zsh)"
+# eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd z zsh)"
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-
-if [ -f "$HOME/.zsh.git.profile" ]; then
-  source "$HOME/.zsh.git.profile"
-fi
-
-
-export PATH=$PATH:/usr/local/go/bin
-
-
-if [ -f "$HOME/.zsh.local.profile" ]; then
-  source "$HOME/.zsh.local.profile"
-fi
-
-if [ -f "$HOME/.cargo/env" ]; then
-  source "$HOME/.cargo/env"
-fi
 
 #if command -v zellij >/dev/null 2>&1; then
  # eval "$(zellij setup --generate-auto-start zsh)"
@@ -266,18 +332,9 @@ fi
 
 #echo 'eval "$(zellij setup --generate-auto-start zsh)"' >> ~/.zshrc
 
-
-if command -v oh-my-posh  >/dev/null 2>&1; then
-  eval "$(oh-my-posh init zsh --config ~/.omp.json)"
-fi                                                                                       
-                      
-
-#eval "$(zellij setup --generate-auto-start zsh)"
+            
 
 
-if [ -f "$HOME/bin/.invoke.zsh" ]; then
-  source "$HOME/bin/.invoke.zsh"
-fi
 
 #source local file if it exists
 
@@ -286,7 +343,13 @@ fi
 #   printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
 # fi
 
+if [ -f "$HOME/.config/kettle/kettle.zshrc" ]; then
+  source "$HOME/.config/kettle/kettle.zshrc"
+fi
+
+zinit ice as"command" from"gh-r" \
+          atclone"./starship init zsh > init.zsh; ./starship completions zsh > _starship" \
+          atpull"%atclone" src"init.zsh"
+zinit light starship/starship
 
 
-
-source /home/codexuser/.config/kettle/kettle.zshrc
