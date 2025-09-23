@@ -180,5 +180,5 @@ show_always = true
 [character]
 format = """
 [╰─$symbol](fg:current_line) """
-success_symbol = '[λ](fg:bold white)'
+success_symbol = '[󱜼](fg:bold white)'
 error_symbol = '[×](fg:bold red)'
