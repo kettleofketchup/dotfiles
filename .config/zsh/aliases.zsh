@@ -9,6 +9,7 @@ alias sshk="kitty +kitten ssh"
 
 # Colorize grep output (good for log files)
 #!/bin/zsh
+alias ls="lsd --config-file=\"$HOME/.ls.config\""
 alias tree='lsd --tree --config-file="$HOME/.ls.config"'
 alias cat='bat --style=header,header-filename,header-filesize,grid'
 alias vim='nvim'

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 #
 # The purpose of this script is to demonstrate how to preview a file or an
 # image in the preview window of fzf.
@@ -16,6 +16,12 @@ fi
 file=${1/#\~\//$HOME/}
 type=$(file --dereference --mime -- "$file")
 #BAT_CMD=bat --style="grid,header"--color=always --pager=never -- 
+if ! command -v bat > /dev/null; then
+  if [[ -d "$HOME/.local/share/zinit/polaris/bin" ]]; then
+    export PATH="$HOME/.local/share/zinit/polaris/bin:$PATH"
+  fi
+fi
+
 
 
 if [[ ! $type =~ image ]]; then
@@ -30,7 +36,6 @@ if [[ ! $type =~ image ]]; then
   if [[ $type =~ binary ]]; then
     file "$1"
     bat --style="grid,header,header-filename,header-filesize,numbers" --color=always --pager=never --line-range 0:5 -- $file
-
     exit
   fi
 fi

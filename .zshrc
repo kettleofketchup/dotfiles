@@ -7,6 +7,7 @@ if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
         print -P "%F{33} %F{34}Installation successful.%f%b" || \
         print -P "%F{160} The clone has failed.%f%b"
+    echo "export PATH=\"$HOME/.local/share/zinit/polaris/bin:$PATH\"" >> "$HOME/.bashrc"
 fi
 
 
@@ -25,7 +26,6 @@ autoload -Uz _zinit
 
 
 
-
 ### End of Zinit's installer chunk
 export PATH=$HOME/bin:/usr/local/bin:$PATH
 local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
@@ -37,13 +37,12 @@ zinit light Aloxaf/fzf-tab
 zinit as"null" wait lucid from"gh-r" for \
     sbin"lsd"     lsd-rs/lsd \
     sbin"fd"      @sharkdp/fd \
-    sbin"bat"     @sharkdp/bat \
+    sbin"bat" atclone"./bat*/bat --completion zsh > _bat" atpull"%atclone" as"completion"     @sharkdp/bat \
     sbin"fzf"     junegunn/fzf \
-    sbin"rg"     @BurntSushi/ripgrep \
+    sbin"rg" atclone"./rip*/rg --generate=complete-zsh > _rg" atpull"%atclone" as"completion"     @BurntSushi/ripgrep \
 
 zinit ice as"program" pick"yank" make
 zinit light mptre/yank    
-
 
 zinit for \
     as'null' \
@@ -52,7 +51,33 @@ zinit for \
     sbin \
   @tmux/tmux
 
+zinit for \
+    as'null' \
+    configure'--prefix=$PWD' \
+    make'PREFIX=$ZPFX install'\
+    sbin \
+  @eradman/entr
 
+zi for \
+    from'gh-r' \
+    sbin'* -> jq' \
+    nocompile \
+  @jqlang/jq
+
+zi for \
+    from'gh-r' \
+    sbin'**/nvim -> nvim' \
+    ver'nightly' \
+  neovim/neovim
+
+zi for \
+    as'completions' \
+    atclone'buildx* completion zsh > _buildx' \
+    from"gh-r" \
+    sbin'!buildx-* -> buildx' \
+  @docker/buildx 
+
+zinit build for @aspiers/stow
 
 zinit for \
     as'null' \
@@ -93,23 +118,6 @@ zinit wait lucid for \
 
 
 
-zinit ice as"completion" id-as"_rg" \
-      atclone"mv rg.zsh _rg" \
-      atpull"%atclone"
-
-zinit snippet "https://raw.githubusercontent.com/BurntSushi/ripgrep/master/crates/core/flags/complete/rg.zsh"
-
-
-
-
-# Download and source bat completions  
-zinit ice as"completion" id-as"_bat" \
-      atclone"mv bat.zsh.in _bat" \
-      atpull"%atclone"
-zinit snippet https://raw.githubusercontent.com/sharkdp/bat/master/assets/completions/bat.zsh.in
-
-
-# Add ripgrep completions
 
 zinit wait"1" lucid for \
     OMZP::git \
@@ -382,3 +390,6 @@ zinit ice as"command" from"gh-r" \
 zinit light starship/starship
 
 
+if [ -f "$HOME/.local/share/zinit/bat" ]; then
+  source "$HOME/.local/share/zinit/kettle/kettle.zshrc"
+fi
