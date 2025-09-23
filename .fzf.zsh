@@ -1,6 +1,6 @@
 # Setup fzf
 # ---------
-if [[ ! "$PATH" == */home/codexuser/.fzf/bin* ]]; then
-  PATH="${PATH:+${PATH}:}/home/codexuser/.fzf/bin"
+if [[ ! "$PATH" == *$HOME/.fzf/bin* ]]; then
+  PATH="${PATH:+${PATH}:}$HOME/.fzf/bin"
 fi
 

@@ -1,11 +1,11 @@
-source /home/codexuser/.config/kettle/completions/kettle.zsh
+source $HOME/.config/kettle/completions/kettle.zsh
 export PATH=$PATH:$HOME/go/bin
 
 if command -v golangci-lint >/dev/null; then
     eval "$(golangci-lint completion zsh)"
 fi
 
-export PATH="/home/codexuser/go/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
 
 
 
