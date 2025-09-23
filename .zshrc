@@ -10,7 +10,6 @@ if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
 fi
 
 
-
 # Load zinit
 source ${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git/zinit.zsh
 zinit light-mode for \
@@ -31,17 +30,20 @@ autoload -Uz _zinit
 export PATH=$HOME/bin:/usr/local/bin:$PATH
 local sanitized_in='${~ctxt[hpre]}"${${in//\\ / }/#\~/$HOME}"'
 
-
-
-
 setopt promptsubst
 PS1="READY >" # provide a simple prompt till the theme loads
+zinit light Aloxaf/fzf-tab
 
 zinit as"null" wait lucid from"gh-r" for \
     sbin"lsd"     lsd-rs/lsd \
     sbin"fd"      @sharkdp/fd \
     sbin"bat"     @sharkdp/bat \
     sbin"fzf"     junegunn/fzf \
+    sbin"rg"     @BurntSushi/ripgrep \
+
+zinit ice as"program" pick"yank" make
+zinit light mptre/yank    
+
 
 zinit for \
     as'null' \
@@ -50,6 +52,29 @@ zinit for \
     sbin \
   @tmux/tmux
 
+
+
+zinit for \
+    as'null' \
+    make'PREFIX=$PWD --quiet install'\
+    sbin \
+  @cli/cli
+
+zinit ice depth=1 id-as"tpm" lucid \
+    atclone"mkdir -p ~/.tmux/plugins && ln -sfn $PWD ~/.tmux/plugins/tpm" \
+    atpull'!git -C ~/.tmux/plugins/tpm pull --ff-only'
+zinit load tmux-plugins/tpm
+
+
+
+
+zinit ice wait lucid atinit"zicompinit; zicdreplay"
+zinit light zdharma-continuum/fast-syntax-highlighting
+
+zinit ice wait lucid atload"!_zsh_autosuggest_start"
+zinit load zsh-users/zsh-autosuggestions
+
+
 zinit for \
     as'null' \
     cmake'.' \
@@ -57,48 +82,47 @@ zinit for \
     sbin \
   @posva/catimg
 
-
-  
-zinit wait"1" lucid for \
-    zdharma-continuum/fast-syntax-highlighting \
-    "zap-zsh/fzf" \
-    OMZP::git \
-    "Aloxaf/fzf-tab" \
-    zsh-users/zsh-completions \
-    zsh-users/zsh-autosuggestions \
-    urbainvaes/fzf-marks \
-    olets/zsh-transient-prompt
-
-
-
-zinit wait"1" lucid for \
+zinit wait lucid for \
   as"completion" \
-        OMZP::docker/completions/_docker \
-        OMZP::docker-compose/_docker-compose \
-        OMZP::ssh \
-        "Aloxaf/fzf-tab" \
-        OMZP::npm \
-        OMZP::uv \
-        OMZP::colored-man-pages \
+    OMZP::docker/completions/_docker \
+    OMZP::docker-compose/_docker-compose \
+    OMZP::ssh \
+    OMZP::npm \
+    OMZP::uv \
+    OMZP::colored-man-pages \
 
 
-zinit ice wait"2" lucid for \
+
+zinit ice as"completion" id-as"_rg" \
+      atclone"mv rg.zsh _rg" \
+      atpull"%atclone"
+
+zinit snippet "https://raw.githubusercontent.com/BurntSushi/ripgrep/master/crates/core/flags/complete/rg.zsh"
+
+
+
+
+# Download and source bat completions  
+zinit ice as"completion" id-as"_bat" \
+      atclone"mv bat.zsh.in _bat" \
+      atpull"%atclone"
+zinit snippet https://raw.githubusercontent.com/sharkdp/bat/master/assets/completions/bat.zsh.in
+
+
+# Add ripgrep completions
+
+zinit wait"1" lucid for \
+    OMZP::git \
+    zsh-users/zsh-completions \
+    OMZP::fzf \
+    zap-zsh/supercharge 
+
+
+zinit wait"2" lucid for \
+  olets/git-prompt-kit \
+  olets/zsh-transient-prompt \
   "hlissner/zsh-autopair" \
-  "zap-zsh/vim" \
-  "zap-zsh/supercharge" \
-  "zsh-users/zsh-history-substring-search" \
   OMZ::lib/clipboard.zsh \
-
-zinit ice depth=1 id-as"tpm" lucid \
-    atclone"mkdir -p ~/.tmux/plugins && ln -sfn $PWD ~/.tmux/plugins/tpm" \
-    atpull'!git -C ~/.tmux/plugins/tpm pull --ff-only'
-zinit load tmux-plugins/tpm
-
-
-zinit ice depth=1 id-as"tpm" lucid \
-    atclone"mkdir -p ~/.tmux/plugins && ln -sfn $PWD ~/.tmux/plugins/tpm" \
-    atpull'!git -C ~/.tmux/plugins/tpm pull --ff-only'
-zinit load tmux-plugins/tpm
 
 
 zsnippet_reload() {
@@ -111,13 +135,18 @@ zsnippet_reload() {
   zinit snippet "$file"
 
 }
-TRANSIENT_PROMPT_TRANSIENT_PROMPT="%B%(?.%F{green}❯.%F{red}❯)%f%b "
+TRANSIENT_PROMPT_TRANSIENT_PROMPT='%B%(?.%F{green}❯.%F{red}❯)%f%b $LAST_EXIT $LAST_DURATION '
+
+
+autoload -Uz add-zsh-hook
+
+
 
 
 
 # zinit load "zap-zsh/atmachine"
-source ~/.config/zsh/aliases.zsh
-source  ~/.config/zsh/exports.zsh
+[[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
+[[ -f ~/.config/zsh/exports.zsh ]] && source ~/.config/zsh/exports.zsh
 
 
 

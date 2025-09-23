@@ -1,7 +1,7 @@
 
 format = """
 [╭](fg:current_line)\
-$os\
+$os \
 $directory\
 $git_branch\
 $git_status\
@@ -38,6 +38,14 @@ pink = '#FF79C6'
 purple = '#BD93F9'
 red	= '#FF5555'
 yellow = '#F1FA8C'
+
+
+[custom.docker]
+description = "Shows the docker symbol if the current directory has Dockerfile or docker-compose.yml files"
+command = "echo 🐳"
+files = ["Dockerfile", "docker-compose.yml", "docker-compose.yaml"]
+when = """ command -v docker &> /dev/null; exit (echo $?); """
+
 
 [os]
 format = '(fg:current_line)[](fg:red)[$symbol ](fg:primary bg:red)[](fg:red)'
@@ -77,6 +85,9 @@ Ubuntu = ''
 Unknown = ''
 Windows = ''
 
+
+
+
 [git_metrics]
 added_style = 'bold blue'
 format = '[+$added]($added_style)/[-$deleted]($deleted_style) '
@@ -92,8 +103,6 @@ truncation_length = 4
 read_only = '󱧵 '
 read_only_style = 'red '
 truncate_to_repo = false
-
-
 
 
 
@@ -117,7 +126,7 @@ renamed = '[\(»$count\)](fg:red bg:box)'
 deleted = '[\(✘$count\)](fg:red bg:box)'
 style = "fg:primary bg:box"
 
-format = "[](fg:box bg:box)[$all_status](fg:box bg:box)[](fg:box bg:box)[](fg:box bg:box)[](fg:box)"
+format = "[](fg:box bg:box)[$all_status](fg:box bg:box)[](fg:box)"
 
 [nodejs]
 format = '[─](fg:current_line)[](fg:green)[$symbol](fg:primary bg:green)[](fg:green bg:box)[ $version](fg:foreground bg:box)[](fg:box)'
