@@ -99,7 +99,6 @@ zinit light zdharma-continuum/fast-syntax-highlighting
 zinit ice wait lucid atload"!_zsh_autosuggest_start"
 zinit load zsh-users/zsh-autosuggestions
 
-
 zinit for \
     as'null' \
     cmake'.' \
@@ -261,10 +260,15 @@ COMPLETION_WAITING_DOTS="true"
 # bindkey '^p' history-search-backward
 # bindkey '^n' history-search-forward
 # bindkey '^[w' kill-region
-
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
+bindkey '^U' backward-kill-line
+bindkey '^K' kill-line
+bindkey '^W' backward-kill-word
+bindkey '^H' backward-delete-char
 
 # History
-HISTSIZE=5000
+HISTSIZE=1000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
 HISTDUP=erase
@@ -362,7 +366,10 @@ zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps -
 # eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd z zsh)"
 
-
+if [ -z "$TMUX" ]; then
+  tmux attach || tmux new-session
+  exit
+fi
 #if command -v zellij >/dev/null 2>&1; then
  # eval "$(zellij setup --generate-auto-start zsh)"
 #fi

@@ -13,13 +13,14 @@ $java\
 $golang\
 $c\
 $cmd_duration\
-$shell\
-$time\
-$username\
+${custom.shell_conditional}\
+${custom.time_conditional}\
+${custom.username_conditional}\
 $line_break\
 $character\
 """
 
+# $username\
 
 palette = 'dracula'
 add_newline = true
@@ -46,6 +47,33 @@ command = "echo 🐳"
 files = ["Dockerfile", "docker-compose.yml", "docker-compose.yaml"]
 when = """ command -v docker &> /dev/null; exit (echo $?); """
 
+[custom.shell_conditional]
+command = """case $SHELL in
+    */zsh) echo "zsh";;
+    */bash) echo "bash";;
+    *) echo "shell";;
+  esac"""
+format = '[─](fg:current_line)[](fg:blue)[ ](fg:primary bg:blue)[](fg:blue bg:box)[$output](fg:foreground bg:box)[](fg:box)'
+unknown_indicator = 'shell'
+when = """[ $COLUMNS -gt 80 ]"""
+
+[custom.time_conditional]
+command = '''echo $(date +%H:%M)'''
+format = '[─](fg:current_line)[](fg:purple)[󰦖 ](fg:primary bg:purple)[](fg:purple bg:box)[ $output](fg:foreground bg:box)[](fg:box)'
+when = """[ $COLUMNS -gt 140 ]"""
+
+[time]
+time_format = '%H:%M'
+disabled = false
+
+[custom.username_conditional]
+command = '''echo $USER'''
+format = '[─](fg:current_line)[](fg:yellow)[ ](fg:primary bg:yellow)[](fg:yellow bg:box)[ $output](fg:foreground bg:box)[](fg:box) '
+when = """[ $COLUMNS -gt 140 ]"""
+
+[username]
+format = '[─](fg:current_line)[](fg:yellow)[ ](fg:primary bg:yellow)[](fg:yellow bg:box)[ $user](fg:foreground bg:box)[](fg:box) '
+show_always = true
 
 [os]
 format = '(fg:current_line)[](fg:red)[$symbol ](fg:primary bg:red)[](fg:red)'
@@ -168,14 +196,7 @@ powershell_indicator = 'powershell'
 fish_indicator = 'fish'
 disabled = false
 
-[time]
-format = '[─](fg:current_line)[](fg:purple)[󰦖 ](fg:primary bg:purple)[](fg:purple bg:box)[ $time](fg:foreground bg:box)[](fg:box)'
-time_format = '%H:%M'
-disabled = false
 
-[username]
-format = '[─](fg:current_line)[](fg:yellow)[ ](fg:primary bg:yellow)[](fg:yellow bg:box)[ $user](fg:foreground bg:box)[](fg:box) '
-show_always = true
 
 [character]
 format = """
