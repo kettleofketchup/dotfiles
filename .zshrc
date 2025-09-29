@@ -40,6 +40,15 @@ zinit as"null" wait lucid from"gh-r" for \
     sbin"bat" atclone"./bat*/bat --completion zsh > _bat" atpull"%atclone" as"completion"     @sharkdp/bat \
     sbin"fzf"     junegunn/fzf \
     sbin"rg" atclone"./rip*/rg --generate=complete-zsh > _rg" atpull"%atclone" as"completion"     @BurntSushi/ripgrep \
+    sbin"kettle"  kettleofkethchup/kettle
+
+
+
+zinit for \
+    atclone'golangci-lint completion zsh > _golangci-lint' \
+    from'gh-r' \
+    sbin'golangci-lint' \
+  @golangci/golangci-lint
 
 zinit ice as"program" pick"yank" make
 zinit light mptre/yank    
@@ -111,6 +120,7 @@ zinit wait lucid for \
     OMZP::docker/completions/_docker \
     OMZP::docker-compose/_docker-compose \
     OMZP::ssh \
+    OMZP::invoke \
     OMZP::npm \
     OMZP::uv \
     OMZP::colored-man-pages \
@@ -385,7 +395,7 @@ fi
 
 # if ! grep -q '@hyperupcall/autoenv/activate.sh' "${ZDOTDIR:-$HOME}/.zprofile.local" 2>/dev/null; then
 #   printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
-# fi
+# f
 
 if [ -f "$HOME/.config/kettle/kettle.zshrc" ]; then
   source "$HOME/.config/kettle/kettle.zshrc"
@@ -399,4 +409,4 @@ zinit light starship/starship
 
 if [ -f "$HOME/.local/share/zinit/bat" ]; then
   source "$HOME/.local/share/zinit/kettle/kettle.zshrc"
-fi
+fisource /home/kettle/.config/kettle/kettle.zshrc

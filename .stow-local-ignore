@@ -16,3 +16,5 @@ build.sh
 .invoke.yaml
 .venv
 src/
+.config/nvim
+.config/ghostty
