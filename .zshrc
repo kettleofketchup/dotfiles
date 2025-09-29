@@ -41,7 +41,7 @@ zinit as"null" wait lucid from"gh-r" for \
     sbin"fzf"     junegunn/fzf \
     sbin"rg" atclone"./rip*/rg --generate=complete-zsh > _rg" atpull"%atclone" as"completion"     @BurntSushi/ripgrep \
     sbin"kettle"  kettleofkethchup/kettle
-
+    
 
 
 zinit for \
@@ -99,6 +99,34 @@ zinit ice depth=1 id-as"tpm" lucid \
     atpull'!git -C ~/.tmux/plugins/tpm pull --ff-only'
 zinit load tmux-plugins/tpm
 
+
+
+### --- Yazi File Manager via zinit ---
+
+# Yazi file manager
+zinit ice from"gh-r" as"program" \
+    pick"yazi" pick"ya" \
+    sbin'ya -> ya' \
+    sbin'yazi -> yazi' \
+
+zinit light sxyazi/yazi
+# Clone the plugins monorepo
+zinit ice wait"0" \
+    atclone"mkdir -p ~/.config/yazi/plugins && ln -sfn {dir} ~/.config/yazi/plugins/plugins-repo" \
+    atpull"%atclone"
+zinit light yazi-rs/plugins
+
+
+# zinit ice wait"0" atclone"mkdir -p ~/.config/yazi/plugins && ln -sf {dir} ~/.config/yazi/plugins/starship" \
+#     atpull"%atclone"
+# zinit light yazi-rs/plugins:starship guit
+
+# # Image preview plugin
+# zinit ice wait"0" atclone"mkdir -p ~/.config/yazi/plugins && ln -sf {dir} ~/.config/yazi/plugins/image" \
+#     atpull"%atclone"
+# zinit light yazi-rs/plugins:image
+
+# End Yazi setup
 
 
 
@@ -407,9 +435,7 @@ zinit ice as"command" from"gh-r" \
 zinit light starship/starship
 
 
-if [ -f "$HOME/.local/share/zinit/bat" ]; then
-  source "$HOME/.local/share/zinit/kettle/kettle.zshrc"
-fisource /home/kettle/.config/kettle/kettle.zshrc
+
 
 export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
