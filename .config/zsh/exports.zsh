@@ -19,6 +19,9 @@ export PATH=$PATH:/usr/local/go/bin
 [[ -d "$HOME/bin" ]] && export PATH="$HOME/bin:$PATH"
 
 export GOPATH=$HOME/.local/share/go
+export GOROOT=/usr/local/go
+export PATH=$PATH:$GOROOT/bin
+export PATH=$PATH:$GOPATH/bin
 export PATH=$HOME/.fnm:$PATH
 export PATH="$HOME/.local/share/neovim/bin":$PATH
 export PATH="$HOME/.local/share/bob/nvim-bin":$PATH

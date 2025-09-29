@@ -410,3 +410,7 @@ zinit light starship/starship
 if [ -f "$HOME/.local/share/zinit/bat" ]; then
   source "$HOME/.local/share/zinit/kettle/kettle.zshrc"
 fisource /home/kettle/.config/kettle/kettle.zshrc
+
+export NVM_DIR="$HOME/.config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
