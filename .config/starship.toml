@@ -54,7 +54,6 @@ command = """case $SHELL in
     *) echo "shell";;
   esac"""
 format = '[─](fg:current_line)[](fg:blue)[ ](fg:primary bg:blue)[](fg:blue bg:box)[$output](fg:foreground bg:box)[](fg:box)'
-unknown_indicator = 'shell'
 when = """[ $COLUMNS -gt 80 ]"""
 
 [custom.time_conditional]
@@ -140,7 +139,6 @@ symbol = ' '
 
 
 [git_status]
-
 conflicted = '[\(🏳$count\)](fg:green bg:box)'
 ahead = '[\(⇡$count\)](fg:green bg:box)'
 behind = '[\(⇣$count\)](fg:green bg:box)'
@@ -153,7 +151,6 @@ staged = '[\(+$count\)](fg:green bg:box)'
 renamed = '[\(»$count\)](fg:red bg:box)'
 deleted = '[\(✘$count\)](fg:red bg:box)'
 style = "fg:primary bg:box"
-
 format = "[](fg:box bg:box)[$all_status](fg:box bg:box)[](fg:box)"
 
 [nodejs]

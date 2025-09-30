@@ -40,7 +40,7 @@ zinit as"null" wait lucid from"gh-r" for \
     sbin"bat" atclone"./bat*/bat --completion zsh > _bat" atpull"%atclone" as"completion"     @sharkdp/bat \
     sbin"fzf"     junegunn/fzf \
     sbin"rg" atclone"./rip*/rg --generate=complete-zsh > _rg" atpull"%atclone" as"completion"     @BurntSushi/ripgrep \
-    sbin"kettle"  kettleofkethchup/kettle
+    # sbin"kettle"  kettleofkethchup/kettle
     
 
 
@@ -111,7 +111,7 @@ zinit ice from"gh-r" as"program" \
 
 zinit light sxyazi/yazi
 # Clone the plugins monorepo
-zinit ice wait"0" \
+zinit ice from "gh-r" \
     atclone"mkdir -p ~/.config/yazi/plugins && ln -sfn {dir} ~/.config/yazi/plugins/plugins-repo" \
     atpull"%atclone"
 zinit light yazi-rs/plugins
