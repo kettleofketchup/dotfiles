@@ -292,18 +292,35 @@ COMPLETION_WAITING_DOTS="true"
 # # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
+autoload -Uz bracketed-paste-magic
+zle -N bracketed-paste bracketed-paste-magic
+
 
 # Keybindings
 # bindkey -e
 # bindkey '^p' history-search-backward
 # bindkey '^n' history-search-forward
 # bindkey '^[w' kill-region
-bindkey '^A' beginning-of-line
+bindkey "^A" beginning-of-line             # Ctrl-A
+bindkey "^[[H" beginning-of-line           # xterm
+bindkey "^[OH" beginning-of-line           # tmux / some terms
+bindkey "\e[1~" beginning-of-line          # Linux console
+
 bindkey '^E' end-of-line
+bindkey "^E" end-of-line                  # Ctrl-E
+bindkey "^[[F" end-of-line                 # xterm
+bindkey "^[OF" end-of-line                 # tmux / some terms
+bindkey "\e[4~" end-of-line                # Linux console
+
 bindkey '^U' backward-kill-line
 bindkey '^K' kill-line
 bindkey '^W' backward-kill-word
 bindkey '^H' backward-delete-char
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
+
+
+bindkey "^[[2~" overwrite-mode
 
 # History
 HISTSIZE=1000
@@ -369,6 +386,8 @@ command -v ag > /dev/null && export FZF_DEFAULT_COMMAND='ag'
 # }
 
 
+export NORMAL_MODE_TEXT_DEFAULT="🧭"
+export INSERT_MODE_TEXT_DEFAULT="✏️"
 
 zstyle ':fzf-tab:*' use-fzf-default-opts yes
 # switch group using `<` and `>`
@@ -425,6 +444,12 @@ fi
 #   printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
 # f
 
+# Bracketed paste mode, fixes multiline pastes
+
+
+
+
+
 if [ -f "$HOME/.config/kettle/kettle.zshrc" ]; then
   source "$HOME/.config/kettle/kettle.zshrc"
 fi
@@ -433,6 +458,7 @@ zinit ice as"command" from"gh-r" \
           atclone"./starship init zsh > init.zsh; ./starship completions zsh > _starship" \
           atpull"%atclone" src"init.zsh"
 zinit light starship/starship
+
 
 
 
