@@ -34,12 +34,20 @@ setopt promptsubst
 PS1="READY >" # provide a simple prompt till the theme loads
 zinit light Aloxaf/fzf-tab
 
+zi for \
+    from'gh-r' \
+    sbin'**/cmake -> cmake' \
+    sbin'**/ctest -> ctest' \
+    sbin'**/cpack -> cpack' \
+  @Kitware/CMake
+
 zinit as"null" wait lucid from"gh-r" for \
     sbin"lsd"     lsd-rs/lsd \
     sbin"fd"      @sharkdp/fd \
     sbin"bat" atclone"./bat*/bat --completion zsh > _bat" atpull"%atclone" as"completion"     @sharkdp/bat \
     sbin"fzf"     junegunn/fzf \
     sbin"rg" atclone"./rip*/rg --generate=complete-zsh > _rg" atpull"%atclone" as"completion"     @BurntSushi/ripgrep \
+     
     # sbin"kettle"  kettleofkethchup/kettle
     
 
@@ -95,8 +103,8 @@ zinit for \
   @cli/cli
 
 zinit ice depth=1 id-as"tpm" lucid \
-    atclone"mkdir -p ~/.tmux/plugins && ln -sfn $PWD ~/.tmux/plugins/tpm" \
-    atpull'!git -C ~/.tmux/plugins/tpm pull --ff-only'
+    atclone"mkdir -p ~/.tmux/plugins && ln -sfn \$PWD ~/.tmux/plugins/tpm" \
+    atpull'%atclone'
 zinit load tmux-plugins/tpm
 
 
@@ -134,7 +142,6 @@ zinit ice wait lucid atinit"zicompinit; zicdreplay"
 zinit light zdharma-continuum/fast-syntax-highlighting
 
 zinit ice wait lucid atload"!_zsh_autosuggest_start"
-zinit load zsh-users/zsh-autosuggestions
 
 zinit for \
     as'null' \
@@ -148,8 +155,6 @@ zinit wait lucid for \
     OMZP::docker/completions/_docker \
     OMZP::docker-compose/_docker-compose \
     OMZP::ssh \
-    OMZP::invoke \
-    OMZP::npm \
     OMZP::uv \
     OMZP::colored-man-pages \
 
@@ -160,14 +165,18 @@ zinit wait"1" lucid for \
     OMZP::git \
     zsh-users/zsh-completions \
     OMZP::fzf \
-    zap-zsh/supercharge 
 
 
 zinit wait"2" lucid for \
   olets/git-prompt-kit \
   olets/zsh-transient-prompt \
   "hlissner/zsh-autopair" \
+  zsh-users/zsh-autosuggestions \
   OMZ::lib/clipboard.zsh \
+  OMZP::npm \
+  zap-zsh/supercharge \
+  OMZP::invoke 
+
 
 
 zsnippet_reload() {
@@ -457,7 +466,7 @@ fi
 zinit ice as"command" from"gh-r" \
           atclone"./starship init zsh > init.zsh; ./starship completions zsh > _starship" \
           atpull"%atclone" src"init.zsh"
-zinit light starship/starship
+zinit load starship/starship
 
 
 
