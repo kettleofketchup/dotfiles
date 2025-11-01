@@ -1,8 +1,10 @@
 #!/bin/bash
 width=$(tmux display -p "#{client_width}")
+
+
 set_plugin_vars() {
-  tmux set -gq @tmux2k-left-plugins "$1"
-  tmux set -gq @tmux2k-right-plugins "$2"
+  tmux set -g @tmux2k-left-plugins "$1"
+  tmux set -g @tmux2k-right-plugins "$2"
 }
 
 
