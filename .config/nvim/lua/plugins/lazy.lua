@@ -15,7 +15,6 @@ local status_ok, lazy = pcall(require, 'lazy')
 if not status_ok then
     return
 end
-
 local icons = require('lib.icons')
 local plugins = require('plugins.list').plugins
 
@@ -27,7 +26,6 @@ lazy.setup({
     concurrency = 8,
     dev = { path = '~/Projects/2KAbhishek/', patterns = { '2kabhishek' }, fallback = true },
     install = { missing = true, colorscheme = { 'onedark' } },
-
     git = {
         log = { '--since=3 days ago' },
         timeout = 120,

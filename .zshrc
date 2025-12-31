@@ -47,9 +47,9 @@ zinit as"null" wait lucid from"gh-r" for \
     sbin"bat" atclone"./bat*/bat --completion zsh > _bat" atpull"%atclone" as"completion"     @sharkdp/bat \
     sbin"fzf"     junegunn/fzf \
     sbin"rg" atclone"./rip*/rg --generate=complete-zsh > _rg" atpull"%atclone" as"completion"     @BurntSushi/ripgrep \
-     
+
     # sbin"kettle"  kettleofkethchup/kettle
-    
+
 
 
 zinit for \
@@ -59,7 +59,7 @@ zinit for \
   @golangci/golangci-lint
 
 zinit ice as"program" pick"yank" make
-zinit light mptre/yank    
+zinit light mptre/yank
 
 zinit for \
     as'null' \
@@ -92,7 +92,7 @@ zi for \
     atclone'buildx* completion zsh > _buildx' \
     from"gh-r" \
     sbin'!buildx-* -> buildx' \
-  @docker/buildx 
+  @docker/buildx
 
 zinit build for @aspiers/stow
 
@@ -123,6 +123,13 @@ zinit ice from "gh-r" \
     atclone"mkdir -p ~/.config/yazi/plugins && ln -sfn {dir} ~/.config/yazi/plugins/plugins-repo" \
     atpull"%atclone"
 zinit light yazi-rs/plugins
+
+# Starship plugin for Yazi
+zinit ice \
+    atclone"mkdir -p ~/.config/yazi/plugins && ln -sfn \$PWD ~/.config/yazi/plugins/starship.yazi" \
+    atpull"%atclone" \
+    as"null"
+zinit light Rolv-Apneseth/starship.yazi
 
 
 # zinit ice wait"0" atclone"mkdir -p ~/.config/yazi/plugins && ln -sf {dir} ~/.config/yazi/plugins/starship" \
@@ -175,7 +182,7 @@ zinit wait"2" lucid for \
   OMZ::lib/clipboard.zsh \
   OMZP::npm \
   zap-zsh/supercharge \
-  OMZP::invoke 
+  OMZP::invoke
 
 
 
@@ -442,7 +449,7 @@ fi
 
 #echo 'eval "$(zellij setup --generate-auto-start zsh)"' >> ~/.zshrc
 
-            
+
 
 
 
@@ -457,7 +464,10 @@ fi
 
 
 
+export NVM_DIR="$HOME/.config/nvm"
 
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 if [ -f "$HOME/.config/kettle/kettle.zshrc" ]; then
   source "$HOME/.config/kettle/kettle.zshrc"
@@ -472,6 +482,3 @@ zinit load starship/starship
 
 
 
-export NVM_DIR="$HOME/.config/nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion

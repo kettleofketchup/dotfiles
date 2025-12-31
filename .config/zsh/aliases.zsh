@@ -19,9 +19,12 @@ alias c='clear'
 alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
-
-
-
+export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
+if command -v nvim >/dev/null; then
+  alias v='nvim'
+else
+  alias v='vim'
+fi
 
 # get top process eating memory
 alias psmem='ps auxf | sort -nr -k 4 | head -5'
@@ -31,7 +34,6 @@ alias pscpu='ps auxf | sort -nr -k 3 | head -5'
 
 # systemd
 alias mach_list_systemctl="systemctl list-unit-files --state=enabled"
-
 
 case "$(uname -s)" in
 
