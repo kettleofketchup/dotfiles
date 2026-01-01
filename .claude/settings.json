@@ -1,0 +1,8 @@
+{
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "code-documentation@claude-code-workflows": true,
+    "full-stack-orchestration@claude-code-workflows": true,
+    "gopls-lsp@claude-plugins-official": true
+  },
+}
