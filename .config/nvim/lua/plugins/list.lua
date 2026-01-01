@@ -285,6 +285,14 @@ local plugins = {
         },
         config = load_config('tools.exercism'),
     },
+
+    
+    {
+        'nvim-telescope/telescope-fzf-native.nvim',
+        config = load_config('tools.yazi'),
+    },
+          
+
     {
         -- '2kabhishek/template.nvim',
         -- cmd = { 'Template' },

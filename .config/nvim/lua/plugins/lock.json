@@ -48,6 +48,7 @@
   "snacks.nvim": { "branch": "main", "commit": "fe7cfe9800a182274d0f868a74b7263b8c0c020b" },
   "sniprun": { "branch": "master", "commit": "c091976ec5dbb0c6587f621657892174fe3dd691" },
   "tdo.nvim": { "branch": "main", "commit": "3e067afe8687517e205588dacf818648a163a5a4" },
+  "telescope-fzf-native.nvim": { "branch": "main", "commit": "6fea601bd2b694c6f2ae08a6c6fab14930c60e2c" },
   "termim.nvim": { "branch": "main", "commit": "0bb39e30d2a1c05448f8eaeb9f5a09c742370490" },
   "utils.nvim": { "branch": "main", "commit": "8950622bd6861f2257364e5027c5613f29225e17" },
   "vim-fugitive": { "branch": "master", "commit": "61b51c09b7c9ce04e821f6cf76ea4f6f903e3cf4" },
