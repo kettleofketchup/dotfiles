@@ -11,8 +11,8 @@ export MANWIDTH=999
 export PATH=$PATH:/usr/local/go/bin
 
 
-
-export PATH=$PATH:/usr/local/go/bin
+[[ -d '/opt/nvim-linux-x86_64/bin' ]] && export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
+[[ -d "/usr/local/go/bin" ]] && export PATH="/usr/local/go/bin:$PATH"
 [[ -d "$HOME/.local/share/go/bin" ]] && export PATH="$HOME/.local/share/go/bin:$PATH"
 [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
 [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
@@ -23,8 +23,9 @@ export GOROOT=/usr/local/go
 export PATH=$PATH:$GOROOT/bin
 export PATH=$PATH:$GOPATH/bin
 export PATH=$HOME/.fnm:$PATH
-export PATH="$HOME/.local/share/neovim/bin":$PATH
-export PATH="$HOME/.local/share/bob/nvim-bin":$PATH
+[[ -d "$HOME/.local/share/neovim/bin" ]] && export PATH="$HOME/.local/share/neovim/bin:$PATH"
+[[ -d "$HOME/.local/share/bob/nvim-bin" ]] && export PATH="$HOME/.local/share/bob/nvim-bin:$PATH"
+
 # export XDG_CURRENT_DESKTOP="Wayland"
 export HOMEBREW_NO_ANALYTICS=1
 export HOMEBREW_NO_ENV_HINTS=1
@@ -32,6 +33,7 @@ export HOMEBREW_NO_ENV_HINTS=1
 # eval "$(fnm env)"
 # eval "$(zoxide init zsh)"
 # eval "`pip completion --zsh`"
+
 export NVM_DIR="$HOME/.nvm"
 if ! command -v kettle >/dev/null 2>&1; then
     echo "Kettle is not installed"

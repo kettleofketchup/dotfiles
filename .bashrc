@@ -116,7 +116,16 @@ if ! shopt -oq posix; then
   fi
 fi
 
-if [ -f ~/.cargo/env ]; then
-    . ~/.cargo/env
-fi 
-export PATH="$HOME/.local/bin:$PATH"
+
+if [ -f ~/.config/zsh/exports.zsh ]; then
+    . ~/.config/zsh/exports.zsh
+fi
+
+if [ -f ~/.config/zsh/aliases.zsh ]; then
+    . ~/.config/zsh/aliases.zsh
+
+# Set DISPLAY to :0 if it's not set
+if [ -z "$DISPLAY" ]; then
+    export DISPLAY=:0
+fi
+

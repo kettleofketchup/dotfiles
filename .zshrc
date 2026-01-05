@@ -164,7 +164,7 @@ zinit wait lucid for \
     OMZP::ssh \
     OMZP::uv \
     OMZP::colored-man-pages \
-
+    OMZP::invoke
 
 
 
@@ -482,3 +482,14 @@ zinit load starship/starship
 
 
 
+
+# bun completions
+[ -s "/home/kettle/.bun/_bun" ] && source "/home/kettle/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

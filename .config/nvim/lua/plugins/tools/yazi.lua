@@ -1,7 +1,0 @@
-
-local yazi = require('yazi')
-yazi.setup({
-    -- your configuration comes here
-    -- or leave it empty to use the default settings
-   build="make" 
-  })
