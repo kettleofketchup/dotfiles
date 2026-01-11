@@ -17,15 +17,13 @@ else
   alias ls='ls --color=auto'
   alias tree='tree --color=auto'
 fi
-
-
 if command -v bat >/dev/null 2>&1; then
   alias cat='bat --style=header,header-filename,header-filesize,grid'
 fi
 
-if command -v rg >/dev/null 2>&1; then
-  alias grep='rg'
-fi
+# if command -v rg >/dev/null 2>&1; then
+#   alias grep='rg'
+# fi
 if command -v fd >/dev/null 2>&1; then
   alias find='fd'
 fi
@@ -66,21 +64,3 @@ alias pscpu='ps auxf | sort -nr -k 3 | head -5'
 # systemd
 alias mach_list_systemctl="systemctl list-unit-files --state=enabled"
 
-case "$(uname -s)" in
-
-Darwin)
-	# echo 'Mac OS X'
-	alias ls='ls -G'
-	;;
-
-Linux)
-	alias ls='ls --color=auto'
-	;;
-
-CYGWIN* | MINGW32* | MSYS* | MINGW*)
-	# echo 'MS Windows'
-	;;
-*)
-	# echo 'Other OS'
-	;;
-esac

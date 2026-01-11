@@ -163,8 +163,8 @@ zinit wait lucid for \
     OMZP::docker-compose/_docker-compose \
     OMZP::ssh \
     OMZP::uv \
-    OMZP::colored-man-pages \
-    OMZP::invoke
+    OMZP::colored-man-pages 
+
 
 
 
@@ -181,8 +181,7 @@ zinit wait"2" lucid for \
   zsh-users/zsh-autosuggestions \
   OMZ::lib/clipboard.zsh \
   OMZP::npm \
-  zap-zsh/supercharge \
-  OMZP::invoke
+  zap-zsh/supercharge 
 
 
 
@@ -201,9 +200,10 @@ TRANSIENT_PROMPT_TRANSIENT_PROMPT='%B%(?.%F{green}❯.%F{red}❯)%f%b $LAST_EXIT
 
 autoload -Uz add-zsh-hook
 
+[[ -f ~/.config/zsh/plugins.zsh ]] && zinit snippet ~/.config/zsh/plugins.zsh
 
-
-
+[[ -f ~/.config/zsh/exports.zsh ]] && zinit snippet ~/.config/zsh/exports.zsh
+[[ -f ~/.config/zsh/aliases.zsh ]] && zinit light ~/.config/zsh/aliases.zsh
 
 # zinit load "zap-zsh/atmachine"
 [[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
@@ -493,3 +493,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+# opencode
+export PATH=/home/kettle/.opencode/bin:$PATH

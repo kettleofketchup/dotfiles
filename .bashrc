@@ -117,12 +117,12 @@ if ! shopt -oq posix; then
 fi
 
 
-if [ -f ~/.config/zsh/exports.zsh ]; then
-    . ~/.config/zsh/exports.zsh
-fi
+[[ -f ~/.config/zsh/exports.zsh ]] && . ~/.config/zsh/exports.zsh
 
-if [ -f ~/.config/zsh/aliases.zsh ]; then
-    . ~/.config/zsh/aliases.zsh
+[[ -f ~/.config/zsh/aliases.zsh ]] && . ~/.config/zsh/aliases.zsh
+
+
+[[ -f ~/.config/bash/completions/_invoke ]] && . ~/.config/bash/completions/_invoke
 
 # Set DISPLAY to :0 if it's not set
 if [ -z "$DISPLAY" ]; then
