@@ -41,6 +41,26 @@ zi for \
     sbin'**/cpack -> cpack' \
   @Kitware/CMake
 
+zi for \
+    from'gh-r' \
+    sbin'bin/lua-language-server -> lua-language-server' \
+  @LuaLS/lua-language-server
+
+
+zi for \
+    from'gh-r' \
+    sbin'lua* -> checkmake' atclone" ./checkmake* completion zsh > _checkmake" atpull"%atclone" as"completion" \
+  @checkmake/checkmake
+
+# zinit for \
+#     as'null' \
+#     configure'--disable-utf8proc --prefix=$PWD --quiet' \
+#     make'linux install'\
+#     sbin'lua -> lua' \
+#   @lua/lua
+
+
+
 zinit as"null" wait lucid from"gh-r" for \
     sbin"lsd"     lsd-rs/lsd \
     sbin"fd"      @sharkdp/fd \
@@ -87,6 +107,7 @@ zi for \
     ver'nightly' \
   neovim/neovim
 
+
 zi for \
     as'completions' \
     atclone'buildx* completion zsh > _buildx' \
@@ -96,11 +117,12 @@ zi for \
 
 zinit build for @aspiers/stow
 
-zinit for \
-    as'null' \
-    make'PREFIX=$PWD --quiet install'\
-    sbin \
-  @cli/cli
+
+zi for \
+    from'gh-r' \
+    sbin"**/gh" atclone"./**/gh completion -s zsh > _gh" atpull"%atclone" as"completion"\
+  cli/cli
+
 
 zinit ice depth=1 id-as"tpm" lucid \
     atclone"mkdir -p ~/.tmux/plugins && ln -sfn \$PWD ~/.tmux/plugins/tpm" \
@@ -435,6 +457,8 @@ zstyle ':fzf-tab:complete:bat:*' fzf-preview 'fzf.zsh $realpath'
 zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYTSTEMD_COLORS=1 systemctl status $word'
 zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
+zstyle ':completion:*:*:(|g)make::targets' call-command true
+zstyle ':completion:*:*:(|g)make:*' tag-order targets
 
 # eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd z zsh)"

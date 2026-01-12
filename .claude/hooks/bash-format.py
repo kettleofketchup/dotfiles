@@ -132,9 +132,19 @@ EDIT_PATTERNS = [
 ]
 
 
+# Pattern to match leading cd command (cd <path> &&)
+# Handles: cd /path && ..., cd "/path with spaces" && ..., cd '/path' && ...
+CD_PREFIX_PATTERN = re.compile(r'^cd\s+(?:"[^"]*"|\'[^\']*\'|\S+)\s*&&\s*')
+
+
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
+
+def strip_cd_prefix(command: str) -> str:
+    """Strip leading 'cd <path> &&' from a command for multi-command checking."""
+    return CD_PREFIX_PATTERN.sub('', command.strip())
+
 
 def split_commands(command: str) -> list[str]:
     """Split a bash command into individual commands."""
@@ -299,8 +309,10 @@ def main():
 
     # -------------------------------------------------------------------------
     # Check 5: Multi-command patterns (&&, ||, ;, newlines)
+    # Allow "cd <path> && <single command>" pattern
     # -------------------------------------------------------------------------
-    commands = split_commands(command)
+    command_without_cd = strip_cd_prefix(command)
+    commands = split_commands(command_without_cd)
 
     if len(commands) > 1:
         lines = [

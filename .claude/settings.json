@@ -34,7 +34,6 @@
       "Bash(go build:*)",
       "Bash(make build.hookshot:*)",
       "Bash(git fetch:*)",
-      "Bash(git rebase:*)",
       "Skill(superpowers:writing-plans)",
       "Skill(superpowers:subagent-driven-development)",
       "Bash(go get:*)",
