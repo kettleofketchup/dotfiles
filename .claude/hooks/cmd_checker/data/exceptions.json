@@ -1,0 +1,19 @@
+{
+
+"allowed": {
+    "commands": [
+         {
+            "command": "cd *",
+            "example": "wc file1.txt file2.txt",
+            "description": "cd /home/kettle/git_repos/website/.worktrees/draft-events && git branch --show-current && echo \"---\" && git log --oneline main..HEAD | wc -l"
+        },
+        {
+            "command": "wc *",
+            "example": "git branch --show-current && echo \"---\" && git log --oneline main..HEAD | wc -l",
+            "description": ""
+        }
+    ]
+
+
+}}
+
