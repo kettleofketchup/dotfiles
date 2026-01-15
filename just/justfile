@@ -1,0 +1,11 @@
+# Main justfile - imports modular recipe files
+# Run `just --list` to see all available recipes
+
+set quiet
+set dotenv-load
+
+import 'dev.just'
+
+# List all available recipes
+default:
+    just --list
