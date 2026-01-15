@@ -6,7 +6,6 @@ alias sshk="kitty +kitten ssh"
 # alias lvim="env TERM=wezterm lvim"
 # alias nvim="env TERM=wezterm nvim"
 
-
 # Colorize grep output (good for log files)
 #!/bin/zsh
 
@@ -55,6 +54,10 @@ else
   alias v='vim'
 fi
 
+if command -v just >/dev/null; then
+  alias j='just'
+
+fi
 # get top process eating memory
 alias psmem='ps auxf | sort -nr -k 4 | head -5'
 

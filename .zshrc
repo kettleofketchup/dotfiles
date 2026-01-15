@@ -101,6 +101,12 @@ zi for \
 
 zi for \
     from'gh-r' \
+    sbin'just' \
+    atclone'./just --completions zsh > _just' atpull'%atclone' as'completion' \
+  @casey/just
+
+zi for \
+    from'gh-r' \
     sbin'**/nvim -> nvim' \
     ver'nightly' \
   neovim/neovim

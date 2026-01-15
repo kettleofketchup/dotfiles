@@ -26,6 +26,7 @@ CHECK_MODULES = [
     "check_search.py",
     "check_edit.py",
     "check_multi_command.py",
+    "check_git_c.py",
 ]
 
 
