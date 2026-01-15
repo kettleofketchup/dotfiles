@@ -51,7 +51,6 @@ zi for \
     from'gh-r' \
     sbin'lua* -> checkmake' atclone" ./checkmake* completion zsh > _checkmake" atpull"%atclone" as"completion" \
   @checkmake/checkmake
-
 # zinit for \
 #     as'null' \
 #     configure'--disable-utf8proc --prefix=$PWD --quiet' \
@@ -67,9 +66,8 @@ zinit as"null" wait lucid from"gh-r" for \
     sbin"bat" atclone"./bat*/bat --completion zsh > _bat" atpull"%atclone" as"completion"     @sharkdp/bat \
     sbin"fzf"     junegunn/fzf \
     sbin"rg" atclone"./rip*/rg --generate=complete-zsh > _rg" atpull"%atclone" as"completion"     @BurntSushi/ripgrep \
-
+    sbin"**/lazygit" @jesseduffield/lazygit \
     # sbin"kettle"  kettleofkethchup/kettle
-
 
 
 zinit for \

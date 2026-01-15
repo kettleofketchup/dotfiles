@@ -10,6 +10,8 @@ export PATH="$HOME/.docker/bin":$PATH
 export MANWIDTH=999
 export PATH=$PATH:/usr/local/go/bin
 
+[[ -f '~/.config/envman/PATH.env' ]] && source ~/.config/envman/PATH.env
+
 
 [[ -d '/opt/nvim-linux-x86_64/bin' ]] && export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
 [[ -d "/usr/local/go/bin" ]] && export PATH="/usr/local/go/bin:$PATH"
