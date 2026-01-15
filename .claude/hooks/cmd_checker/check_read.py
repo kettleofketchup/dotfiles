@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Check for file read patterns that should use the Read tool."""
+"""Check for file read patterns that should use the Read tool.
+
+EXCEPTIONS (allowed):
+- Commands with || echo fallback (error handling pattern)
+- Commands with | pipe (output being processed)
+- tail -f (following live logs)
+"""
 
 import sys
 import os
@@ -27,9 +33,28 @@ FILE_READ_PATTERNS = [
      "Read"),
 ]
 
+# Exception patterns - these are allowed
+EXCEPTION_PATTERNS = [
+    re.compile(r'\|\|\s*echo\b'),   # || echo fallback pattern
+    re.compile(r'\|\s*\w'),         # pipe to another command
+    re.compile(r'^tail\s+(-\w+\s+)*-f\b'),  # tail -f (follow mode)
+]
+
+
+def is_exception(command: str) -> bool:
+    """Check if the command matches an allowed exception pattern."""
+    for pattern in EXCEPTION_PATTERNS:
+        if pattern.search(command):
+            return True
+    return False
+
 
 def check(command: str) -> None:
     """Check command and block if it matches read patterns."""
+    # Check for exceptions first
+    if is_exception(command):
+        return
+
     match = check_patterns(command, FILE_READ_PATTERNS)
     if match:
         pattern_name, suggestion, correct_tool = match

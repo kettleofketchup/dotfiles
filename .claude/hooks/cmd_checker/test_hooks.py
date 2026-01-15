@@ -47,10 +47,15 @@ def main():
         ("check_write.py", "echo hello", False, "echo no redirect (allowed)"),
         ("check_read.py", "cat README.md", True, "cat file (blocked)"),
         ("check_read.py", "git status", False, "non-read (allowed)"),
+        ("check_read.py", 'tail -50 /tmp/log.txt 2>/dev/null || echo "No log"', False, "|| echo fallback (allowed)"),
+        ("check_read.py", "cat file.txt | grep pattern", False, "pipe to cmd (allowed)"),
+        ("check_read.py", "tail -f /var/log/syslog", False, "tail -f follow (allowed)"),
+        ("check_read.py", "head -20 file.txt | wc -l", False, "head with pipe (allowed)"),
         ("check_edit.py", "sed -i 's/a/b/' file", True, "sed -i (blocked)"),
         ("check_multi_command.py", "cmd1 && cmd2", True, "&& chain (blocked)"),
         ("check_multi_command.py", "cd /tmp && ls", False, "cd && cmd (allowed)"),
         ("check_multi_command.py", "git status", False, "single cmd (allowed)"),
+        ("check_multi_command.py", 'cmd || echo "fallback"', False, "|| echo (allowed)"),
     ]
 
     passed = failed = 0
@@ -71,6 +76,9 @@ def main():
         ("echo hello > file.txt", True, "write pattern (blocked)"),
         ("grep pattern file", False, "single grep (allowed)"),
         ("cmd1 && cmd2", True, "multi-cmd (blocked)"),
+        ('tail -50 /tmp/debug.log 2>/dev/null || echo "No log found"', False, "|| echo fallback (allowed)"),
+        ("cat file.txt | head -10", False, "pipe chain (allowed)"),
+        ("tail -f /var/log/app.log", False, "tail -f follow (allowed)"),
     ]
 
     print("\nFull cmd_checker tests:")

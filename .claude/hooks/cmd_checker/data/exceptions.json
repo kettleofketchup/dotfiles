@@ -1,19 +1,31 @@
 {
-
-"allowed": {
+  "allowed": {
     "commands": [
-         {
-            "command": "cd *",
-            "example": "wc file1.txt file2.txt",
-            "description": "cd /home/kettle/git_repos/website/.worktrees/draft-events && git branch --show-current && echo \"---\" && git log --oneline main..HEAD | wc -l"
-        },
-        {
-            "command": "wc *",
-            "example": "git branch --show-current && echo \"---\" && git log --oneline main..HEAD | wc -l",
-            "description": ""
-        }
+      {
+        "pattern": "cd *",
+        "description": "cd prefix with single command",
+        "example": "cd /home/user/project && git status"
+      },
+      {
+        "pattern": "* || echo *",
+        "description": "OR fallback with echo for error handling",
+        "example": "tail -50 /tmp/debug.log 2>/dev/null || echo \"No log file found\""
+      },
+      {
+        "pattern": "* | *",
+        "description": "Piping output to another command",
+        "example": "cat file.txt | grep pattern"
+      },
+      {
+        "pattern": "tail -f *",
+        "description": "Following live log files",
+        "example": "tail -f /var/log/syslog"
+      },
+      {
+        "pattern": "* && echo *",
+        "description": "Commands ending with echo for showing results",
+        "example": "git branch --show-current && echo '---' && git log --oneline | wc -l"
+      }
     ]
-
-
-}}
-
+  }
+}
