@@ -12,84 +12,83 @@ Task automation using [just](https://github.com/casey/just) with a standardized 
 ```
 project/
 ├── dev                 # Bootstrap script (installs just, runs `just dev`)
-├── justfile            # Root: import 'just/justfile'
+├── justfile            # Root: settings, imports, and modules
 └── just/
-    ├── justfile        # Main file with settings, modules, and imports
     ├── dev.just        # Development recipes (imported, no namespace)
     ├── go.just         # Go module (go::build, go::test)
     ├── docker.just     # Docker module (docker::build, docker::push)
-    └── release.just    # Release module (release::all, release::linux)
+    └── lua.just        # Lua module (lua::install, lua::check)
 ```
 
 ## Bootstrapping a New Repo
 
 1. Copy `assets/dev` to project root, make executable: `chmod +x dev`
 2. Copy `assets/just/` directory to project root
-3. Edit `just/dev.just` with project-specific setup commands
-4. Add additional `.just` modules as needed
+3. Create root `justfile` with imports and modules
+4. Edit `just/dev.just` with project-specific setup commands
+5. Add additional `.just` modules as needed
 
 ## Quick Reference
 
-### Root Justfile
+### Root Justfile (Recommended Pattern)
+
+**Put everything in root justfile** for tab completion to work:
 
 ```just
-# justfile (root) - imports from just/ directory
-import 'just/justfile'
-```
-
-### Main Justfile with Modules
-
-```just
-# just/justfile
+# justfile (root)
 set quiet
 set dotenv-load
 
-# Modules: namespaced with :: syntax
-mod go          # go::build, go::test, go::lint
-mod docker      # docker::build, docker::push
-mod release     # release::all, release::linux
+# Imports: merged into root namespace
+import 'just/dev.just'
 
-# Imports: merged into this namespace
-import 'dev.just'
+# Modules: namespaced with :: syntax (specify path)
+mod go 'just/go.just'           # go::build, go::test
+mod docker 'just/docker.just'   # docker::build, docker::push
+mod lua 'just/lua.just'         # lua::install, lua::check
 
-# Top-level aliases for common operations
-build:
-    just go::build myapp
-
-test:
-    just go::test myapp
+default:
+    just --list
 ```
 
 ### Module Example
 
 ```just
-# go.just - called as go::build, go::test, etc.
+# just/go.just - called as go::build, go::test, etc.
 VERSION := `git describe --tags --always 2>/dev/null || echo "dev"`
 BIN_DIR := env_var("PWD") / "bin"
 
+# Build the application
+[group('go')]
 build tool:
     @mkdir -p {{BIN_DIR}}
     go build -o {{BIN_DIR}}/{{tool}} .
 
+# Run tests
+[group('go')]
 test tool:
     go test -race -cover ./...
 
+# Run linter
+[group('go')]
 lint:
     golangci-lint run
 ```
 
 ### Import vs Module
 
-| Feature | `import 'file.just'` | `mod name` |
-|---------|----------------------|------------|
-| Namespace | Merged | Separate (`name::*`) |
+| Feature | `import 'just/file.just'` | `mod name 'just/name.just'` |
+|---------|---------------------------|----------------------------|
+| Namespace | Merged into parent | Separate (`name::*`) |
 | Calling | `just recipe` | `just name::recipe` |
-| Use for | Shared settings, dev | Categorized tooling |
+| Best for | dev.just only | All other modules |
 
-### Common Dev Module
+**Rule of thumb:** Use `import` only for `dev.just`. Use `mod` for everything else.
+
+### Common Dev Module (Imported)
 
 ```just
-# dev.just - Imported (no namespace)
+# just/dev.just - Imported (no namespace) for common recipes
 
 # Bootstrap the development environment
 dev:
@@ -100,6 +99,42 @@ dev:
 # Clean build artifacts
 clean:
     rm -rf dist/ build/ target/
+```
+
+### Tool Module Example
+
+```just
+# just/lua.just - Called as lua::install, lua::check, etc.
+lua_version := env("LUA_VERSION", "5.4.6")
+prefix := env("PREFIX", "/usr/local")
+
+# Install complete lua environment
+[group('lua')]
+default: check install
+    echo "Lua environment setup complete"
+
+# Check current installation status
+[group('lua')]
+check:
+    command -v lua >/dev/null 2>&1 || echo "lua not found"
+
+# Install all components
+[group('lua')]
+install: install-deps install-lua install-luarocks
+    echo "Lua installation complete"
+
+# Clean build artifacts
+[group('lua')]
+clean:
+    rm -rf /tmp/lua-build/*
+```
+
+### Listing Recipes
+
+```bash
+just --list                    # Shows modules collapsed
+just --list --list-submodules  # Shows all module recipes expanded
+just lua::                     # Tab-complete shows lua recipes
 ```
 
 ## Shell Completions Setup

@@ -102,8 +102,8 @@ zi for \
 zi for \
     from'gh-r' \
     sbin'just' \
-    atclone'./just --completions zsh > _just' atpull'%atclone' as'completion' \
   @casey/just
+
 
 zi for \
     from'gh-r' \
@@ -189,7 +189,7 @@ zinit wait lucid for \
     OMZP::docker-compose/_docker-compose \
     OMZP::ssh \
     OMZP::uv \
-    OMZP::colored-man-pages 
+    OMZP::colored-man-pages
 
 
 
@@ -207,7 +207,7 @@ zinit wait"2" lucid for \
   zsh-users/zsh-autosuggestions \
   OMZ::lib/clipboard.zsh \
   OMZP::npm \
-  zap-zsh/supercharge 
+  zap-zsh/supercharge
 
 
 
@@ -383,8 +383,10 @@ local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
 "
 # Completion styling
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*:descriptions' format "%U%B%d%b%u"
+zstyle ':completion:*:messages' format "%F{green}%d%f"
 
-zstyle ':completion:*:descriptions' format '[%d]'
+#zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
 
@@ -479,7 +481,12 @@ fi
 
 
 
-
+# just completions (patched for module support)
+if [[ -f ~/.config/just/completions.zsh ]]; then
+    source ~/.config/just/completions.zsh
+    autoload -Uz compinit && compinit
+    compdef _just just
+fi
 
 #source local file if it exists
 

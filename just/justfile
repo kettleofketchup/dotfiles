@@ -1,4 +1,4 @@
-# Main justfile - imports modular recipe files
+# Main justfile - modular recipe organization
 # Run `just --list` to see all available recipes
 
 set quiet
@@ -6,6 +6,7 @@ set dotenv-load
 
 import 'dev.just'
 
-# List all available recipes
+mod lua    # just/lua/mod.just -> lua::* or "just lua <recipe>"
+
 default:
     just --list
