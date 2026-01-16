@@ -1,4 +1,6 @@
 #compdef just
+compdef _just just
+compdef _just j
 
 autoload -U is-at-least
 

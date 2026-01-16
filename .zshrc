@@ -227,13 +227,19 @@ TRANSIENT_PROMPT_TRANSIENT_PROMPT='%B%(?.%F{green}❯.%F{red}❯)%f%b $LAST_EXIT
 autoload -Uz add-zsh-hook
 
 [[ -f ~/.config/zsh/plugins.zsh ]] && zinit snippet ~/.config/zsh/plugins.zsh
+[[ -f ~/.config/zsh/history.zsh ]] && zinit snippet ~/.config/zsh/history.zsh
 
+[[ -f ~/.config/zsh/keys.zsh ]] && zinit snippet ~/.config/zsh/keys.zsh
+[[ -f ~/.config/zsh/settings.zsh ]] && zinit snippet ~/.config/zsh/settings.zsh
+
+
+[[ -f ~/.config/zsh/styles.zsh ]] && zinit snippet ~/.config/zsh/styles.zsh
 [[ -f ~/.config/zsh/exports.zsh ]] && zinit snippet ~/.config/zsh/exports.zsh
-[[ -f ~/.config/zsh/aliases.zsh ]] && zinit light ~/.config/zsh/aliases.zsh
+[[ -f ~/.config/zsh/aliases.zsh ]] && zinit snippet ~/.config/zsh/aliases.zsh
 
 # zinit load "zap-zsh/atmachine"
-[[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
-[[ -f ~/.config/zsh/exports.zsh ]] && source ~/.config/zsh/exports.zsh
+#[[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
+#[[ -f ~/.config/zsh/exports.zsh ]] && source ~/.config/zsh/exports.zsh
 
 
 
@@ -272,139 +278,6 @@ ENABLE_CORRECTION="true"
 # Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
 COMPLETION_WAITING_DOTS="true"
 
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-# plugins=(fzf-tab fzf tmux zsh-syntax-highlighting zsh-autosuggestions autoenv git npm tmux uv ssh sudo
-# docker-compose docker
-# copyfile
-
-# )
-
-
-# source $ZSH/oh-my-zsh.sh
-
-# User configuration
-
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
-
-# Set personal aliases, overriding those provided by oh-my-zsh libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-zsh
-# users are encouraged to define aliases within the ZSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
-# Generated for envman. Do not edit.
-# [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
-
-# # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-# [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-autoload -Uz bracketed-paste-magic
-zle -N bracketed-paste bracketed-paste-magic
-
-
-# Keybindings
-# bindkey -e
-# bindkey '^p' history-search-backward
-# bindkey '^n' history-search-forward
-# bindkey '^[w' kill-region
-bindkey "^A" beginning-of-line             # Ctrl-A
-bindkey "^[[H" beginning-of-line           # xterm
-bindkey "^[OH" beginning-of-line           # tmux / some terms
-bindkey "\e[1~" beginning-of-line          # Linux console
-
-bindkey '^E' end-of-line
-bindkey "^E" end-of-line                  # Ctrl-E
-bindkey "^[[F" end-of-line                 # xterm
-bindkey "^[OF" end-of-line                 # tmux / some terms
-bindkey "\e[4~" end-of-line                # Linux console
-
-bindkey '^U' backward-kill-line
-bindkey '^K' kill-line
-bindkey '^W' backward-kill-word
-bindkey '^H' backward-delete-char
-bindkey '^A' beginning-of-line
-bindkey '^E' end-of-line
-
-
-bindkey "^[[2~" overwrite-mode
-
-# History
-HISTSIZE=1000
-HISTFILE=~/.zsh_history
-SAVEHIST=$HISTSIZE
-HISTDUP=erase
-setopt appendhistory
-setopt sharehistory
-setopt hist_ignore_space
-setopt hist_ignore_all_dups
-setopt hist_save_no_dups
-setopt hist_ignore_dups
-setopt hist_find_no_dups
-
-local extract="
-in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
-local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
-"
-# Completion styling
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
-zstyle ':completion:*:descriptions' format "%U%B%d%b%u"
-zstyle ':completion:*:messages' format "%F{green}%d%f"
-
-#zstyle ':completion:*:descriptions' format '[%d]'
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
-
-
-zstyle ':completion:*' menu no
-zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
-
-
-# zstyle ':fzf-tab:*' show-group full
-
-# zstyle ':fzf-tab:*' single-group full
-# zstyle ':fzf-tab:*' prefix ''
-# bindkey '\t' expand-or-complete # fzf-tab reads it during initialization
-
-
-
-LSD_COMMAND_PREVIEW='lsd --tree --depth 1 --group-directories-first --color=always --icon=always $realpath'
-CAT_COMMAND_PREVIEW='bat --pager=never --color=always --line-range 0:30 $realpath'
-
 compdef _gnu_generic fzf
 compdef _gnu_generic lsd
 compdef _gnu_generic pip
@@ -430,74 +303,31 @@ command -v ag > /dev/null && export FZF_DEFAULT_COMMAND='ag'
 # }
 
 
-export NORMAL_MODE_TEXT_DEFAULT="🧭"
-export INSERT_MODE_TEXT_DEFAULT="✏️"
-
-zstyle ':fzf-tab:*' use-fzf-default-opts yes
-# switch group using `<` and `>`
-zstyle ':fzf-tab:*' switch-group '<' '>'
-
-zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
-
-zstyle ':fzf-tab:*' popup-min-size 400 400
-
-zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
-
-# compdef _gnu_generic ssh
-
-
-zstyle ':fzf-tab:complete:ln:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:file:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:mv:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:pip:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:zoxide:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:z:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:ls:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:lsd:*' fzf-preview 'fzf.zsh $realpath'
-
-zstyle ':fzf-tab:complete:cat:*' fzf-preview 'fzf.zsh $realpath'
-
-zstyle ':fzf-tab:complete:bat:*' fzf-preview 'fzf.zsh $realpath'
-zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYTSTEMD_COLORS=1 systemctl status $word'
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
-
-zstyle ':completion:*:*:(|g)make::targets' call-command true
-zstyle ':completion:*:*:(|g)make:*' tag-order targets
 
 # eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd z zsh)"
+# Bracketed paste mode, fixes multiline pastes
+autoload -Uz bracketed-paste-magic
+zle -N bracketed-paste bracketed-paste-magic
+
+
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+# bun completions
+[ -s "/home/kettle/.bun/_bun" ] && source "/home/kettle/.bun/_bun"
+
+# just completions (patched for module support)
+if [[ -f ~/.config/just/completions.zsh ]]; then
+    zinit snippet ~/.config/just/completions.zsh
+
+fi
 
 if [ -z "$TMUX" ]; then
   tmux attach || tmux new-session
   exit
 fi
-#if command -v zellij >/dev/null 2>&1; then
- # eval "$(zellij setup --generate-auto-start zsh)"
-#fi
-
-#echo 'eval "$(zellij setup --generate-auto-start zsh)"' >> ~/.zshrc
-
-
-
-# just completions (patched for module support)
-if [[ -f ~/.config/just/completions.zsh ]]; then
-    source ~/.config/just/completions.zsh
-    autoload -Uz compinit && compinit
-    compdef _just just
-fi
-
-#source local file if it exists
-
-
-# if ! grep -q '@hyperupcall/autoenv/activate.sh' "${ZDOTDIR:-$HOME}/.zprofile.local" 2>/dev/null; then
-#   printf '%s\n' "source $(npm root -g)/@hyperupcall/autoenv/activate.sh" >> "${ZDOTDIR:-$HOME}/.zprofile.local"
-# f
-
-# Bracketed paste mode, fixes multiline pastes
-
-
 
 export NVM_DIR="$HOME/.config/nvm"
 
@@ -514,20 +344,5 @@ zinit ice as"command" from"gh-r" \
 zinit load starship/starship
 
 
-
-
-
-
-# bun completions
-[ -s "/home/kettle/.bun/_bun" ] && source "/home/kettle/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
 # opencode
-export PATH=/home/kettle/.opencode/bin:$PATH
+export PATH=$HOME/.opencode/bin:$PATH
