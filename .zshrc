@@ -145,10 +145,11 @@ zi wait lucid for \
   neovim/neovim
 
 zi wait lucid for \
-    as'completions' \
-    atclone'buildx* completion zsh > _buildx' \
-    from"gh-r" \
+    from'gh-r' \
     sbin'!buildx-* -> buildx' \
+    atclone'mkdir -p ~/.config/zsh/completions && ln -sfn buildx-* buildx && ./buildx completion zsh > ~/.config/zsh/completions/_buildx' \
+    atpull'%atclone' \
+    as'null' \
   @docker/buildx
 
 zinit ice wait lucid

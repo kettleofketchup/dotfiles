@@ -48,9 +48,12 @@ Configure SAML providers for SSO with applications (ArgoCD, Grafana, etc.).
 ### Blueprints (Declarative Config)
 YAML-based declarative configuration for flows, stages, providers, applications.
 - v1 schema: `version`, `metadata`, `context`, `entries`
-- Tags: `!KeyOf`, `!Find`, `!Env`, `!Context`, `!Format`, `!If`, `!Condition`, `!Enumerate`
-- Mount via ConfigMap at `/blueprints/custom/` in server + worker pods
-- See [blueprints.md](references/blueprints.md)
+- Tags: `!KeyOf` (intra-blueprint only), `!Find`, `!FindObject` (2025.8+), `!Env`, `!Context`, `!Format`, `!If`, `!Condition`, `!Enumerate`. **`!Slice` does not exist** — common mis-citation.
+- `state:` values: `present` (reconcile drift), `created` (create-once-ignore-after), `must_created` (fail if exists), `absent` (delete)
+- Mount via ConfigMap at `/blueprints/custom/` in server + worker pods, atomic per-file transactions, 60min reapply cadence
+- See [blueprints.md](references/blueprints.md) for the structural overview
+- **State semantics, !KeyOf scoping, first-boot chicken-and-egg**: [blueprints/sync_states.md](references/blueprints/sync_states.md)
+- **LDAP sources** (`user_matching_mode`, password sync, delete_not_found): [blueprints/ldap_sources.md](references/blueprints/ldap_sources.md)
 
 ### Traefik Forward Auth Middleware
 Protect apps behind Traefik using Authentik proxy provider outpost.
