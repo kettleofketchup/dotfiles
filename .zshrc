@@ -365,15 +365,18 @@ export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-if [ -f "$HOME/.config/kettle/kettle.zshrc" ]; then
-  source "$HOME/.config/kettle/kettle.zshrc"
+if command -v starship >/dev/null 2>&1; then
+  # Use system-installed Starship
+  eval "$(starship init zsh)"
+else
+  # Fallback to zinit-managed Starship
+  zinit ice as"command" \
+    from"gh-r" \
+    atclone'./starship init zsh > init.zsh; ./starship completions zsh > _starship' \
+    atpull'%atclone' \
+    src"init.zsh"
+
+  zinit load starship/starship
 fi
-
-zinit ice as"command" from"gh-r" \
-          atclone"./starship init zsh > init.zsh; ./starship completions zsh > _starship" \
-          atpull"%atclone" src"init.zsh"
-zinit load starship/starship
-
-
 # opencode
 export PATH=$HOME/.opencode/bin:$PATH
