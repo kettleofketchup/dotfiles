@@ -315,7 +315,8 @@ ENABLE_CORRECTION="true"
 # e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
 # Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
 COMPLETION_WAITING_DOTS="true"
-
+autoload -Uz compinit
+compinit
 compdef _gnu_generic fzf
 compdef _gnu_generic lsd
 compdef _gnu_generic pip
