@@ -1,96 +1,37 @@
-# Docs: https://ghostty.org/docs/config.
+# Dynamic theme colors
+config-file = ?"~/.config/omarchy/current/theme/ghostty.conf"
 
-# Reload by pressing:
-# ctrl+shift+, (Linux) 
-# cmd+shift+, (macOS)
-#font-family = FiraCode
-font-family = FiraMono Nerd Font
-# font-family = MonoLisa
-# font-family = Comic Code Ligatures
-# font-family = AppleColorEmoji
-font-size = 12
-window-padding-x = 8
-window-padding-y = 8
-window-decoration = auto
-# window-width = 70
-# window-height = 16
-mouse-hide-while-typing = true
-theme = void
-adjust-cell-height = 35%
-# confirm-close-surface = always
-# adjust-cell-width = 5%
-bold-is-bright = true
-adjust-cursor-height = 35%
-font-thicken = false
-cursor-style = block
+# Font
+font-family = "JetBrainsMono Nerd Font"
+font-style = Regular
+font-size = 9
+
+# Window
+window-theme = ghostty
+window-padding-x = 14
+window-padding-y = 14
+confirm-close-surface=false
+resize-overlay = never
+gtk-toolbar-style = flat
+
+# Cursor styling
+cursor-style = "block"
 cursor-style-blink = false
-cursor-invert-fg-bg = true
-shell-integration-features = no-cursor
 
-## macOS
-macos-option-as-alt = true
-macos-titlebar-style = tabs
-macos-non-native-fullscreen = visible-menu
+# Cursor styling + SSH session terminfo
+# (all shell integration options must be passed together)
+shell-integration-features = no-cursor,ssh-env
 
-# keybind = cmd+w=quit
+# Keyboard bindings
+keybind = shift+insert=paste_from_clipboard
+keybind = control+insert=copy_to_clipboard
+keybind = super+control+shift+alt+arrow_down=resize_split:down,100
+keybind = super+control+shift+alt+arrow_up=resize_split:up,100
+keybind = super+control+shift+alt+arrow_left=resize_split:left,100
+keybind = super+control+shift+alt+arrow_right=resize_split:right,100
 
-## Clipboard
-clipboard-write = allow
-clipboard-read = ask
-clipboard-paste-protection = false
+# Slowdown mouse scrolling
+mouse-scroll-multiplier = 0.95
 
-## Shell integration
-shell-integration = zsh
-shell-integration-features = no-cursor
-
-
-# This is the configuration file for Ghostty.
-#
-# This template file has been automatically created at the following
-# path since Ghostty couldn't find any existing config files on your system:
-#
-#   $HOME/.config/ghostty/config
-#
-# The template does not set any default options, since Ghostty ships
-# with sensible defaults for all options. Users should only need to set
-# options that they want to change from the default.
-#
-# Run `ghostty +show-config --default --docs` to view a list of
-# all available config options and their default values.
-#
-# Additionally, each config option is also explained in detail
-# on Ghostty's website, at https://ghostty.org/docs/config.
-
-# Config syntax crash course
-# ==========================
-# # The config file consists of simple key-value pairs,
-# # separated by equals signs.
-# font-family = Iosevka
-# window-padding-x = 2
-#
-# # Spacing around the equals sign does not matter.
-# # All of these are identical:
-# key=value
-# key= value
-# key =value
-# key = value
-#
-# # Any line beginning with a # is a comment. It's not possible to put
-# # a comment after a config option, since it would be interpreted as a
-# # part of the value. For example, this will have a value of "#123abc":
-# background = #123abc
-#
-# # Empty values are used to reset config keys to default.
-# key =
-#
-# # Some config options have unique syntaxes for their value,
-# # which is explained in the docs for that config option.
-# # Just for example:
-
-resize-overlay-duration = 4s 10ms
-
-# keybind = global:f3=toggle_quick_terminal
-quick-terminal-position = top
-quick-terminal-screen = main
-quick-terminal-animation-duration = 1
-quick-terminal-autohide = true
+# Fix general slowness on hyprland (https://github.com/ghostty-org/ghostty/discussions/3224)
+async-backend = epoll

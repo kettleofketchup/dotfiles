@@ -12,9 +12,6 @@ alias sshk="kitty +kitten ssh"
 if command -v lsd >/dev/null 2>&1; then
   alias ls="lsd --config-file=\"$HOME/.ls.config\""
   alias tree='lsd --tree --config-file="$HOME/.ls.config"'
-else
-  alias ls='ls --color=auto'
-  alias tree='tree --color=auto'
 fi
 if command -v bat >/dev/null 2>&1; then
   alias cat='bat --style=header,header-filename,header-filesize,grid'
