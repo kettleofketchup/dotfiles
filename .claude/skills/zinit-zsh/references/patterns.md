@@ -32,6 +32,22 @@ zi for \
   neovim/neovim
 ```
 
+### Prefer tarball over raw binary (cross-platform)
+
+Some repos publish both raw binaries and tarballs. Zinit may grab the raw binary
+and fail to extract it. Use `bpick'*.tar.gz'` to force tarballs — zinit still
+auto-detects OS/arch from the filtered list:
+
+```zsh
+zi for \
+    from'gh-r' \
+    bpick'*.tar.gz' \
+    sbin'mise/bin/mise -> mise' \
+    atclone'mise/bin/mise completion zsh > _mise' atpull'%atclone' as'completion' \
+    atload'eval "$(mise activate zsh)"' \
+  @jdx/mise
+```
+
 ### Multiple binaries from one release
 
 ```zsh
