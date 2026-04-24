@@ -135,8 +135,22 @@ zi wait lucid for \
 
 zi wait lucid for \
     from'gh-r' \
+    sbin'yq_* -> yq' \
+    atclone'chmod +x yq_* && ./yq_* shell-completion zsh > _yq' atpull'%atclone' as'completion' \
+  @mikefarah/yq
+
+zi wait lucid for \
+    from'gh-r' \
     sbin'just' \
   @casey/just
+
+zi wait lucid for \
+    from'gh-r' \
+    bpick'*.tar.gz' \
+    sbin'mise/bin/mise -> mise' \
+    atclone'mise/bin/mise completion zsh > _mise' atpull'%atclone' as'completion' \
+    atload'eval "$(mise activate zsh)"' \
+  @jdx/mise
 
 zi wait lucid for \
     from'gh-r' \
@@ -381,3 +395,5 @@ else
 fi
 # opencode
 export PATH=$HOME/.opencode/bin:$PATH
+
+. "$HOME/.local/share/../bin/env"

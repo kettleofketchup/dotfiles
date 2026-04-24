@@ -57,6 +57,43 @@ mise watch -t test -g "src/**"     # watch glob, run task
 mise tasks info build              # task details
 ```
 
+## Trust
+
+Mise requires explicit trust before executing potentially dangerous config
+directives: `[env]` (_.file, _.source, templates), `[hooks]`, and `[tasks]`
+with shell commands. Tool versions don't require trust.
+
+```bash
+mise trust                         # trust mise.toml in current directory
+mise trust mise.local.toml         # trust a specific file
+mise trust --all                   # trust all config files in parent dirs
+mise trust --untrust               # revoke trust for current config
+mise trust --untrust mise.toml     # revoke trust for specific file
+```
+
+### Auto-Trust Directories
+
+Skip the `mise trust` prompt for known-safe paths:
+
+```toml
+# ~/.config/mise/config.toml
+[settings]
+trusted_config_paths = ["~/work", "~/projects"]
+```
+
+Or via environment variable:
+```bash
+export MISE_TRUSTED_CONFIG_PATHS="$HOME/work:$HOME/projects"
+```
+
+### What Happens Without Trust
+
+- `[tools]` — installs and activates normally (no trust needed)
+- `[env]` with `_.file`/`_.source` — **ignored** until trusted
+- `[env]` templates (tera) — **ignored** until trusted
+- `[hooks]` — **ignored** until trusted
+- Mise shows a warning prompting you to run `mise trust`
+
 ## Configuration & Diagnostics
 
 ```bash

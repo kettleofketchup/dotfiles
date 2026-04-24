@@ -88,6 +88,48 @@ trigger_with_vars:
     project: my-group/downstream-project
 ```
 
+## Pipeline Auto-Cancel and Interruptible Jobs
+
+Cancel redundant pipelines when a new commit is pushed to the same branch.
+
+### Setup
+
+```yaml
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible  # Cancel only interruptible jobs
+
+default:
+  interruptible: true  # All jobs interruptible by default
+```
+
+### `workflow:auto_cancel:on_new_commit` (GitLab 16.10+)
+
+| Value | Behavior |
+|-------|----------|
+| `conservative` (default) | Cancel entire pipeline, but only if no `interruptible: false` jobs have started |
+| `interruptible` | Cancel only individual jobs with `interruptible: true` |
+| `none` | Never auto-cancel |
+
+### `interruptible` keyword
+
+- Set at `default:` level to apply to all jobs
+- Override per-job with `interruptible: false` for release-critical jobs (publish, deploy)
+- Tag pipelines are unaffected — you don't push new commits to a tag ref
+- When `on_new_commit: interruptible`, only jobs marked `interruptible: true` are cancelled; `false` jobs keep running
+
+### Example: Protect only publish jobs
+
+```yaml
+default:
+  interruptible: true
+
+publish-binary:
+  stage: publish
+  interruptible: false  # Never cancel mid-upload
+  script: curl --upload-file ...
+```
+
 ## Key Constraints
 
 - Max 1000 downstream pipelines per hierarchy
