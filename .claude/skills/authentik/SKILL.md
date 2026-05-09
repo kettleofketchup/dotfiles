@@ -62,6 +62,10 @@ Protect apps behind Traefik using Authentik proxy provider outpost.
 - Headers: `X-authentik-username`, `X-authentik-groups`, `X-authentik-email`
 - See [middleware.md](references/middleware.md)
 
+### Hiding Applications from the User Library
+Use `meta_launch_url: "blank://blank"` to hide a proxy-provider Application's tile from My Applications without changing its policies. The literal is `blank://blank` — `blank://` alone fails Authentik's URL validator with `Enter a valid URL`. Hide forward-auth proxies that **duplicate** an existing OIDC/SAML user-facing app; keep visible (with a real launch URL) for proxies that ARE the only user-facing entry.
+- See [hide-from-library.md](references/hide-from-library.md)
+
 ### Google Workspace SAML Login
 "Login with Google" via SAML federation source.
 - Google Admin Console: custom SAML app → ACS URL + Entity ID

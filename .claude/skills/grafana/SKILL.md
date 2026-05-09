@@ -1,7 +1,7 @@
 ---
 name: grafana
 last_updated: 2026-03-23
-description: "Grafana observability stack for self-hosted Kubernetes using kube-prometheus-stack. This skill should be used when deploying Grafana/Prometheus/Alertmanager via Helm, creating Grafana dashboards (JSON models, panels, variables, PromQL/LogQL queries), provisioning dashboards via ConfigMap sidecars or Git/ArgoCD, configuring datasources (Prometheus, Loki, Tempo, PostgreSQL), creating ServiceMonitors/PodMonitors for scraping app metrics, building cluster health dashboards, Ceph storage monitoring, Traefik ingress metrics, app-specific dashboards, integrating Grafana authentication with Authentik OAuth2/OIDC, designing multi-signal dashboards with collapsible rows (metrics/logs/traces), configuring bidirectional Loki-Tempo cross-signal correlation, setting up OTEL Collector spanmetrics connectors for trace-derived RED metrics, using datasource template variables for portable dashboards, or delivering dashboards via dedicated Helm charts with .Files.Get."
+description: "Grafana observability stack for self-hosted Kubernetes using kube-prometheus-stack. This skill should be used when deploying Grafana/Prometheus/Alertmanager via Helm, creating Grafana dashboards (JSON models, panels, variables, PromQL/LogQL queries), provisioning dashboards via ConfigMap sidecars or Git/ArgoCD, configuring datasources (Prometheus, Loki, Tempo, PostgreSQL), creating ServiceMonitors/PodMonitors for scraping app metrics, building cluster health dashboards, Ceph storage monitoring, Traefik ingress metrics, app-specific dashboards, integrating Grafana authentication with Authentik OAuth2/OIDC, designing multi-signal dashboards with collapsible rows (metrics/logs/traces), configuring bidirectional Loki-Tempo cross-signal correlation, setting up OTEL Collector spanmetrics connectors for trace-derived RED metrics, using datasource template variables for portable dashboards, delivering dashboards via dedicated Helm charts with .Files.Get, OR reviewing/validating dashboard JSON for paren-balance / regex-escape / template-variable / Mixed-datasource-join bugs before deploy (see Dashboard Review section)."
 ---
 
 # Grafana Observability Stack
@@ -75,3 +75,58 @@ Detailed panel layouts, PromQL/LogQL queries, and metric references per domain:
 - Datasource ConfigMaps need label `grafana_datasource: "1"`
 - Cross-namespace ServiceMonitor scraping requires `prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues: false`
 - Grafana persistent storage: use `persistence.enabled: true` with appropriate StorageClass for sqlite DB (dashboards provisioned from ConfigMaps survive restarts regardless)
+
+## Dashboard Review (Pre-Deploy Validation)
+
+After editing any dashboard JSON, run the review script before commit. Catches the bugs that produce silent HTTP 400 from Grafana's `/api/ds/query` endpoint and cascading `ERR_NETWORK_CHANGED` in the browser:
+
+| Bug class | Symptom |
+|-----------|---------|
+| **Paren imbalance in LogQL** | "parse error: unexpected $end" — `topk(N, sum by (X) (count_over_time(...)))` needs THREE trailing `)`s; one missing is invisible at JSON-render but fatal at parse |
+| **Over-escaped regex** | Dashboard returns no data — `\\\\.` in JSON source decodes to `\\.` in memory, in LogQL backticks that's regex `\\.` (literal-backslash-then-any-char), not `\.` (literal dot). Halve the backslashes if you see `\\\\\\\\` anywhere |
+| **Mixed-datasource broken join** | Empty table — Loki returns `client`, Prometheus returns `pod_ip`; need a `renameByRegex` step BEFORE `joinByField` to align them |
+| **Unmatched template variable** | Empty/null filter values — panel references `$source` but dashboard only declares `$cluster` |
+| **Unbalanced backtick raw string** | Parser treats remainder of query as regex content — count backticks per `expr`, must be even |
+
+### Usage
+
+```sh
+# Static checks only (no cluster needed):
+bash scripts/review-dashboard.sh path/to/dashboard.json
+
+# With live Loki smoke test:
+LOKI_URL=http://10.43.x.x:3100 bash scripts/review-dashboard.sh path/to/dashboard.json --live
+
+# Or via SSH to an edge node (autodetects Loki ClusterIP):
+EDGE_HOST=edge-dev bash scripts/review-dashboard.sh path/to/dashboard.json --live
+```
+
+### Backslash escaping reference
+
+Three escaping layers interact in dashboard JSON:
+
+| Layer | What `\\` means | Write `\` literal as |
+|-------|----------------|---------------------|
+| JSON string literal | one backslash | `\\` (two chars in source) |
+| LogQL backtick raw string | two literal backslashes | n/a — raw, no escaping |
+| Regex (RE2) | escape next char + identity → matches `\` | `\\\\` |
+
+To match a **literal dot** in a LogQL backtick-regex (e.g. `pod.svc.cluster.local`):
+- Inside backticks: `\.` (regex syntax)
+- In JSON source: `\\.` (JSON-escapes the one backslash) → memory `\.` → LogQL receives raw `\.` → regex `\.` ✓
+
+Common over-escape mistake: `\\\\.` in JSON (4 chars) → memory `\\.` → LogQL `\\.` → regex `\\.` (literal-backslash-then-any-char). Misses every actual dot.
+
+### Common LogQL paren shapes
+
+| Form | Trailing closes |
+|------|-----------------|
+| `count_over_time({...}[1h])` | `)` |
+| `sum(count_over_time(...))` | `))` |
+| `sum by (X) (count_over_time(...))` | `))` (the `(X)` is inline, balances itself) |
+| `topk(N, sum by (X) (count_over_time(...)))` | `)))` |
+| `count(count by (X) (count_over_time(...)))` | `)))` |
+
+Inline parens in `by (X)` clauses are LogQL syntax (not function calls) and balance themselves on the same line — don't count them when checking trailing closes.
+
+See [dashboard-review.md](references/dashboard-review.md) for the full checklist + script reference.

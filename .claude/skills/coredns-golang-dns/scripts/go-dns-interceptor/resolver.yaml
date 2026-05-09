@@ -1,0 +1,21 @@
+listen: ":1053"
+
+upstream:
+  default:
+    - 1.1.1.1:53
+    - 9.9.9.9:53
+  zones:
+    internal.corp.:
+      - 10.0.0.53:53
+
+records:
+  - { name: db.internal.corp.,    type: A,     ttl: 60,  value: 10.0.0.10 }
+  - { name: cache.internal.corp., type: A,     ttl: 60,  value: 10.0.0.11 }
+  - { name: api.internal.corp.,   type: A,     ttl: 60,  value: 10.0.0.20 }
+  - { name: api.internal.corp.,   type: AAAA,  ttl: 60,  value: fd00::20 }
+  - { name: www.internal.corp.,   type: CNAME, ttl: 60,  value: api.internal.corp. }
+  - { name: probe.internal.corp., type: TXT,   ttl: 30,  value: "synthetic record" }
+  - name: _https._tcp.api.internal.corp.
+    type: SRV
+    ttl: 60
+    srv: { priority: 0, weight: 5, port: 443, target: api.internal.corp. }
