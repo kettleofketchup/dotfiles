@@ -1,7 +1,7 @@
 ---
 name: github
-version: 1.1.0
-updated: 2026-02-01
+version: 1.2.0
+updated: 2026-05-18
 description: GitHub CLI (gh) and GitHub Actions workflow development. This skill should be used when working with gh commands (PRs, issues, releases, API), writing GitHub Actions workflows, configuring workflow triggers/jobs/steps, optimizing CI/CD pipelines with caching/parallelization, reducing action minutes, matrix builds, self-hosted runners, debugging workflow failures, setting up Node.js/npm/pnpm/yarn with actions/setup-node, or caching Playwright/Cypress browsers.
 ---
 
@@ -10,6 +10,10 @@ description: GitHub CLI (gh) and GitHub Actions workflow development. This skill
 ## Overview
 
 Comprehensive GitHub development covering the `gh` CLI for repository operations and GitHub Actions for CI/CD automation, with emphasis on workflow optimization and cost reduction.
+
+## Related skills
+
+- **[copilot](../copilot/SKILL.md)** — GitHub Copilot PR code review setup, `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md` authoring, and bridging Copilot config to `.claude/skills/`. Use whenever working on Copilot review, custom instructions, or syncing repo conventions for Copilot.
 
 ## gh CLI Quick Reference
 
@@ -231,6 +235,7 @@ act --secret-file .secrets       # With secrets
 
 ## Resources
 
+- **[copilot skill](../copilot/SKILL.md)** - Copilot PR review, custom instructions files, bridging to `.claude/skills/`
 - [gh-cli.md](references/gh-cli.md) - Complete gh command reference
 - [actions-triggers-jobs.md](references/actions-triggers-jobs.md) - Workflow triggers, concurrency, jobs, matrix, runners, services
 - [actions-steps-expressions.md](references/actions-steps-expressions.md) - Steps, conditionals, contexts, expressions, secrets, artifacts
