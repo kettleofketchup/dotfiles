@@ -32,6 +32,19 @@ Loki (logs), Tempo (traces) deploy as separate Helm charts in the same namespace
 
 ### Dashboard Creation
 Build Grafana dashboards: JSON model structure, panel types (timeseries, stat, gauge, table, logs, heatmap), template variables, PromQL/LogQL query patterns.
+
+**Prefer the Grafana Foundation SDK over hand-written JSON for new
+dashboards.** It's Grafana's official Python (also Go, Java, TypeScript,
+PHP) library that emits dashboard JSON typed against the same CUE
+schemas Grafana itself uses internally — so the output validates
+against Grafana Cloud's schema by construction instead of relying on
+hand-curated validators that drift behind Grafana releases. See
+[dashboard-foundation-sdk.md](references/dashboard-foundation-sdk.md)
+for install, build patterns (DashboardBuilder + RowBuilder + panel
+builders), V1-vs-V2 (Scenes) model selection, and the export-to-JSON
+flow used by the reference impl in
+`docs/dev/telemetry/dashboards/gen_dashboard.py`.
+
 - Provisioning via ConfigMap sidecar (label: `grafana_dashboard: "1"`)
 - Git-based provisioning via ArgoCD kustomize overlay
 - See [dashboard-creation.md](references/dashboard-creation.md)
