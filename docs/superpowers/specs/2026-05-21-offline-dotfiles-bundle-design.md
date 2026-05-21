@@ -39,9 +39,7 @@ so excludes match against that prefix:
 
 - `dotfiles/dotfiles.tar` — prevent self-inclusion
 - `dotfiles/.worktrees` — transient git worktrees
-- `dotfiles/.venv` — local virtualenv
-- `dotfiles/.cache`
-- `*/node_modules` — anywhere in the tree
+- `dotfiles/.cache` — local cache
 
 `.git/` is **included** so the offline machine retains history.
 
@@ -84,11 +82,35 @@ DOTFILES="$(cd "$SCRIPT_DIR/.." && pwd)"
   exit 1
 }
 
+# Guard: stow must be installed (offline target may not have it)
+command -v stow >/dev/null || {
+  echo "Error: 'stow' not found. Install GNU stow before running this script." >&2
+  echo "  Arch:   sudo pacman -S stow" >&2
+  echo "  Debian: sudo apt-get install stow" >&2
+  exit 1
+}
+
 # Step 1: depack zinit
 "$DOTFILES/bin/zinit-depack.sh"
 
-# Step 2: stow dotfiles
+# Step 2: detect stow conflicts; back them up
 cd "$DOTFILES"
+conflicts=$(stow -n . 2>&1 | awk '/existing target is/ {print $NF}' || true)
+if [[ -n "$conflicts" ]]; then
+  backup="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$backup"
+  echo "Backing up conflicting files to $backup ..."
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    target="$HOME/$f"
+    if [[ -e "$target" ]]; then
+      mv "$target" "$backup/"
+      echo "  $f"
+    fi
+  done <<< "$conflicts"
+fi
+
+# Step 3: stow dotfiles
 stow -R .
 
 echo "Done. Open a new shell to load the restored environment."
@@ -100,9 +122,7 @@ pack-offline:
     bin/zinit-pack.sh
     tar --exclude='dotfiles/dotfiles.tar' \
         --exclude='dotfiles/.worktrees' \
-        --exclude='dotfiles/.venv' \
         --exclude='dotfiles/.cache' \
-        --exclude='*/node_modules' \
         -cf "$HOME/dotfiles/dotfiles.tar" \
         -C "$HOME" dotfiles
     echo "Built: $HOME/dotfiles/dotfiles.tar ($(du -h "$HOME/dotfiles/dotfiles.tar" | cut -f1))"
