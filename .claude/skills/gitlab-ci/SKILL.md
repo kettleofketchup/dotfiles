@@ -1,6 +1,6 @@
 ---
 name: gitlab-ci
-description: "GitLab CI/CD multi-project pipeline orchestration and cross-pipeline dependencies. This skill should be used when configuring trigger jobs to start downstream pipelines in other GitLab projects, implementing cross-pipeline gating (Repo B waits for Repo A's build), setting up tag cascade pipelines across multiple repos, creating pipeline subscriptions, passing variables between pipelines, using strategy depend for synchronous triggers, building scheduled cross-project rebuilds, MR cross-validation against dependent repos, manual orchestration buttons, or writing .gitlab-ci.yml files with multi-project trigger patterns. Covers both generic GitLab CI patterns and edge infrastructure-specific templates for multi-repo Nix flake architectures."
+description: "GitLab CI/CD multi-project orchestration AND CI/CD Catalog component publishing. This skill should be used when writing trigger jobs, cross-pipeline gating, tag cascades, strategy:depend, multi-repo .gitlab-ci.yml patterns, or publishing reusable components to the GitLab CI/CD Catalog."
 ---
 
 # GitLab CI Multi-Project Pipelines
@@ -140,6 +140,24 @@ publish-binary:
 - Pipeline subscriptions: max 2 per project (self-managed configurable)
 - Pipeline subscriptions only trigger on tag pipeline completion
 
+## CI/CD Catalog Component Publishing
+
+Building a reusable catalog component that other projects `include:` is its own
+workflow with self-managed-GitLab gotchas (heterogeneous runner fleets,
+internal CA trust, the `release:` keyword needing release-cli image, catalog
+browse-API vs include-resolution being independent). See
+[CI/CD Catalog Publishing Reference](references/cicd-catalog-publishing.md)
+for the full pattern: `.gitlab-ci.yml` template, yamllint config, CI variable
+setup, the dual-mode-script trick for shell-vs-docker executors, the
+SSL_CERT_FILE pattern for org-CA trust, and failure-recovery via force-retag.
+
+Key invariants:
+
+- **Publish job needs `image: registry.gitlab.com/gitlab-org/release-cli:latest`** — the default `docker:latest` lacks release-cli; the `release:` keyword fails with `release-cli: not found` otherwise.
+- **Org CA must be trusted by release-cli/glab**, not by writing to `/etc/ssl/certs` (read-only on shell executors) — use a temp bundle + `export SSL_CERT_FILE=<bundle>`. The export survives into the `release:` step.
+- **CI variable for the CA must be Type: File** so `$VAR` holds a path and `[ -f "$VAR" ]` checks pass; Protect must match the publishing tag's protection level (usually OFF).
+- **Catalog browse API (`/api/v4/ci/catalog/resources`) may 404 on some tiers** without breaking `include: component:` — verify via the lint API (`POST /api/v4/projects/<id>/ci/lint`) instead.
+
 ## References
 
 Detailed patterns, templates, and architecture-specific configurations:
@@ -150,6 +168,8 @@ Detailed patterns, templates, and architecture-specific configurations:
   pattern, sequential stage triggers, tag cascade, scheduled rebuilds
 - [Edge Infrastructure Templates](references/edge-infra-patterns.md) — ready-to-use
   templates for multi-repo Nix flake architecture with builder/os/k3s-core/services
+- [CI/CD Catalog Publishing](references/cicd-catalog-publishing.md) — building +
+  publishing reusable components, runner-fleet quirks, CA trust for release-cli, recovery
 
 ## External Docs
 
