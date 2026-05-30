@@ -1,7 +1,7 @@
 ---
 name: grafana
 last_updated: 2026-03-23
-description: "Grafana observability stack for self-hosted Kubernetes using kube-prometheus-stack. This skill should be used when deploying Grafana/Prometheus/Alertmanager via Helm, creating Grafana dashboards (JSON models, panels, variables, PromQL/LogQL queries), provisioning dashboards via ConfigMap sidecars or Git/ArgoCD, configuring datasources (Prometheus, Loki, Tempo, PostgreSQL), creating ServiceMonitors/PodMonitors for scraping app metrics, building cluster health dashboards, Ceph storage monitoring, Traefik ingress metrics, app-specific dashboards, integrating Grafana authentication with Authentik OAuth2/OIDC, designing multi-signal dashboards with collapsible rows (metrics/logs/traces), configuring bidirectional Loki-Tempo cross-signal correlation, setting up OTEL Collector spanmetrics connectors for trace-derived RED metrics, using datasource template variables for portable dashboards, delivering dashboards via dedicated Helm charts with .Files.Get, OR reviewing/validating dashboard JSON for paren-balance / regex-escape / template-variable / Mixed-datasource-join bugs before deploy (see Dashboard Review section)."
+description: "Grafana observability on Kubernetes (kube-prometheus-stack). This skill should be used when deploying Grafana/Prometheus/Loki/Tempo, building dashboards, ServiceMonitors, OIDC, or trace correlation."
 ---
 
 # Grafana Observability Stack

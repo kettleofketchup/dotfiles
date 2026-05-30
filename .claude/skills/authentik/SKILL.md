@@ -1,21 +1,6 @@
 ---
 name: authentik
-description: >-
-  Authentik self-hosted identity provider for Kubernetes. This skill should be
-  used when deploying Authentik via Helm, configuring SAML/OAuth2 providers,
-  setting up blueprints for declarative configuration, integrating Traefik
-  forward auth middleware, configuring Google Workspace SAML federation as
-  login source, setting up SSO for ArgoCD/Grafana/Gitea/MinIO, writing
-  property mappings, managing flows/stages/policies, protecting apps behind
-  Authentik proxy outpost, customizing branding (logos, favicons, custom CSS,
-  color schemes, flow backgrounds, per-domain brands, Patternfly CSS variables,
-  dark/light theme overrides, login page styling, brand blueprints),
-  configuring Authentik environment variables (AUTHENTIK_SECRET_KEY,
-  AUTHENTIK_POSTGRESQL__, AUTHENTIK_EMAIL__, AUTHENTIK_STORAGE__,
-  AUTHENTIK_LOG_LEVEL), tuning web/worker settings, setting up S3 storage
-  backends, configuring PgBouncer compatibility, PostgreSQL read replicas,
-  or deploying Authentik in airgapped/offline environments (disabling update
-  checks, analytics, error reporting, Gravatar).
+description: Authentik self-hosted IdP on Kubernetes. This skill should be used when deploying via Helm, configuring SAML/OAuth2 providers, blueprints, Google Workspace SSO, forward-auth, branding, or app SSO.
 ---
 
 # Authentik

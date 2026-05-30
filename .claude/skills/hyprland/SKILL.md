@@ -1,6 +1,6 @@
 ---
 name: hyprland
-description: Hyprland Wayland compositor on NixOS for desktop and Wails (Go + webkit2gtk) app development. Use when configuring programs.hyprland in NixOS modules, setting up the hyprwm/Hyprland flake input with cachix, fixing Wails blank-screen on Wayland (WEBKIT_DISABLE_DMABUF_RENDERER, WEBKIT_DISABLE_COMPOSITING_MODE), enabling Intel/AMD/NVIDIA graphics (hardware.graphics, intel-media-driver, mesa RADV, hardware.nvidia.open, prime offload, nixos-hardware GPU modules), writing multi-GPU smart-default modules with mySystem.gpu.vendor, setting per-vendor Hyprland env vars (LIBVA_DRIVER_NAME, __GLX_VENDOR_LIBRARY_NAME, GBM_BACKEND), wiring xdg-desktop-portal-hyprland, configuring wayland.windowManager.hyprland in home-manager, writing hyprland.conf, installing hypr* ecosystem, or running animated wallpapers (mpvpaper video, awww/swww animated GIF, linux-wallpaperengine, gtk-layer-shell from Wails).
+description: Hyprland Wayland compositor on NixOS. This skill should be used when configuring programs.hyprland, GPU rendering (Intel/AMD/NVIDIA), Wails/webkit2gtk fixes, xdg portals, home-manager, or wallpapers.
 ---
 
 # Hyprland on NixOS

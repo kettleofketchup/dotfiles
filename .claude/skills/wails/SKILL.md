@@ -1,6 +1,6 @@
 ---
 name: wails
-description: Wails v2 Go desktop application framework with web frontend. Use when creating Go desktop apps with web UI (Svelte/React/Vue/Preact/Lit), binding Go methods to JavaScript, using wails CLI (init/dev/build/generate), configuring wails.json project settings, working with application options (window size/title/frameless/translucent), handling lifecycle callbacks (OnStartup/OnShutdown/OnDomReady/OnBeforeClose), setting up native menus and dialogs, using the runtime API (window/events/clipboard/dialog/screen/notifications/drag-drop), building cross-platform (Windows/macOS/Linux), creating NSIS installers, code signing, Mac App Store submission, troubleshooting WebView2/webkit2gtk issues, or diagnosing rendering differences between browser dev mode and Wails production (background transparency, BackgroundColour, WindowIsTranslucent, WebviewIsTransparent, webkit2gtk vs Chromium rendering, GPU policy, CSS backdrop-filter/blur in webview).
+description: Wails v2 Go desktop apps with web frontend. This skill should be used when scaffolding, binding Go to JS, configuring options, building cross-platform, or debugging webkit2gtk/WebView2 rendering.
 last_updated: 2026-04-18
 wails_version: v2.9
 source: https://github.com/wailsapp/wails/tree/master/website/docs

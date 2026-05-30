@@ -1,6 +1,6 @@
 ---
 name: sway
-description: Sway i3-compatible Wayland compositor on NixOS for desktop and Wails (Go + webkit2gtk) app development. Use when configuring programs.sway in NixOS modules (wrapperFeatures.gtk, extraSessionCommands, extraPackages), fixing Wails blank-screen on Wayland (WEBKIT_DISABLE_DMABUF_RENDERER, WEBKIT_DISABLE_COMPOSITING_MODE), enabling Intel/AMD/NVIDIA graphics (hardware.graphics, hardware.nvidia, prime offload, nixos-hardware GPU modules, --unsupported-gpu, WLR_DRM_DEVICES), writing multi-GPU smart-default modules with mySystem.gpu.vendor, wiring xdg-desktop-portal-wlr with xdg-desktop-portal-gtk for FileChooser, configuring wayland.windowManager.sway in home-manager, installing companion packages (waybar, wofi, mako, swaylock, swayidle, grim, slurp, wl-clipboard), or running animated wallpapers (mpvpaper video, awww/swww animated GIF, swaybg static, linux-wallpaperengine, gtk-layer-shell from Wails).
+description: Sway tiling Wayland compositor on NixOS. This skill should be used when configuring programs.sway, GPU rendering (Intel/AMD/NVIDIA), Wails/webkit2gtk fixes, xdg portals, home-manager, or wallpapers.
 ---
 
 # Sway on NixOS
