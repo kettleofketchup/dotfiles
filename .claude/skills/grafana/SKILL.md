@@ -30,6 +30,14 @@ Loki (logs), Tempo (traces) deploy as separate Helm charts in the same namespace
 
 ## Task Reference
 
+### Querying logs from the CLI
+Pull and parse Loki logs at the terminal with `logcli` (Grafana's dedicated Loki
+CLI — real `--since 7d`, `jsonl` output, `--tail`). Share one Grafana
+service-account (bot) token with `gcx`, or point `LOKI_ADDR` at the datasource
+proxy with a bearer token; covers `gcx` session reuse and when to pick
+`gcx logs query` vs `logcli`, plus error breakdowns and trace correlation.
+- See [logcli.md](references/logcli.md)
+
 ### Dashboard Creation
 Build Grafana dashboards: JSON model structure, panel types (timeseries, stat, gauge, table, logs, heatmap), template variables, PromQL/LogQL query patterns.
 
