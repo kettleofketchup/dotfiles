@@ -103,80 +103,23 @@ You will need the Container Device Interface (CDI) for the GPU installed in your
 
 ## Podman Quadlets (systemd)
 
-Manage containers as native systemd services. Recommended for production on Linux with systemd.
-
-### Setup
-
-1. Create the configuration directory:
-   ```bash
-   mkdir -p ~/.config/containers/systemd/
-   ```
-
-2. Create `~/.config/containers/systemd/open-webui.container`:
-
-   ```ini
-   [Unit]
-   Description=Open WebUI Container
-   After=network-online.target
-
-   [Container]
-   Image=ghcr.io/open-webui/open-webui:main
-   ContainerName=open-webui
-   PublishPort=3000:8080
-   Volume=open-webui:/app/backend/data
-   AddHost=host.containers.internal:host-gateway
-
-   [Service]
-   Restart=always
-
-   [Install]
-   WantedBy=default.target
-   ```
-
-3. Reload and start:
-   ```bash
-   systemctl --user daemon-reload
-   systemctl --user start open-webui
-   systemctl --user enable open-webui
-   ```
-
-### Management
+Manage containers as native systemd services. Create `~/.config/containers/systemd/open-webui.container` with `[Container]` section setting `Image`, `ContainerName=open-webui`, `PublishPort=3000:8080`, `Volume=open-webui:/app/backend/data`, `AddHost=host.containers.internal:host-gateway`. Then:
 
 ```bash
-systemctl --user status open-webui     # Check status
-journalctl --user -u open-webui -f     # View logs
-systemctl --user stop open-webui       # Stop service
+systemctl --user daemon-reload && systemctl --user start open-webui
 ```
 
-To update: `podman pull ghcr.io/open-webui/open-webui:main` then `systemctl --user restart open-webui`.
+Update: `podman pull ghcr.io/open-webui/open-webui:main` then restart the service.
 
 ## Docker with WSL (Windows Subsystem for Linux)
 
-### Step 1: Install WSL
+1. Install WSL: follow [Microsoft's documentation](https://learn.microsoft.com/en-us/windows/wsl/install)
+2. Install Docker Desktop from docker.com, select "WSL 2" backend
+3. Go to **Settings > Resources > WSL Integration**, enable your default distro
+4. From WSL terminal: `docker run -d -p 3000:8080 -v open-webui:/app/backend/data --name open-webui ghcr.io/open-webui/open-webui:main`
 
-Follow the [official Microsoft documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
-
-### Step 2: Install Docker Desktop
-
-Download from [docker.com](https://www.docker.com/products/docker-desktop/). Select the "WSL 2" backend during setup.
-
-### Step 3: Configure Docker Desktop for WSL
-
-Go to **Settings > Resources > WSL Integration**. Enable integration with your default WSL distro.
-
-### Step 4: Run Open WebUI
-
-From your WSL terminal:
-
-```bash
-docker pull ghcr.io/open-webui/open-webui:main
-docker run -d -p 3000:8080 -v open-webui:/app/backend/data --name open-webui ghcr.io/open-webui/open-webui:main
-```
-
-Always run `docker` commands from your WSL terminal, not from PowerShell or Command Prompt. When using volume mounts, ensure paths are accessible from your WSL distribution.
+Always run `docker` from WSL terminal (not PowerShell). Ensure volume mount paths are accessible from WSL.
 
 ## Docker Desktop Extension
 
-Docker has released an Open WebUI Docker extension that uses Docker Model Runner for inference. See the [blog post](https://www.docker.com/blog/open-webui-docker-desktop-model-runner/).
-
-This is not an officially supported installation method. You cannot log in as different users in the extension since it is designed for a single local user. For issues, submit them on the [extension's GitHub repository](https://github.com/rw4lll/open-webui-docker-extension).
+Docker released an Open WebUI extension using Docker Model Runner for inference. See the [blog post](https://www.docker.com/blog/open-webui-docker-desktop-model-runner/). Not officially supported; designed for single local user only. Issues: [extension GitHub](https://github.com/rw4lll/open-webui-docker-extension).

@@ -91,27 +91,8 @@ S3_REGION_NAME=us-east-1
 ## Reverse Proxy
 
 ### Nginx
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    client_max_body_size 50M;  # File uploads
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_buffering off;          # Critical for SSE streaming
-        proxy_cache off;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-**Critical**: `proxy_buffering off` prevents garbled markdown/streaming corruption.
+**Critical**: Set `proxy_buffering off; proxy_cache off;` in the location block to prevent garbled markdown/streaming corruption. Also set `proxy_http_version 1.1;` and `Upgrade`/`Connection`/`Host`/`X-Real-IP` headers. `client_max_body_size 50M` for file uploads.
 
 ### Caddy
 ```
@@ -145,11 +126,9 @@ SRC_LOG_LEVELS=RAG:DEBUG,MAIN:INFO  # Per-module
 
 ## Common Docker Networking
 
-| Scenario | URL to Use |
-|----------|-----------|
-| Ollama on host (Linux) | `http://host.docker.internal:11434` or `--network=host` |
-| Ollama on host (macOS) | `http://host.docker.internal:11434` |
-| Ollama in Docker | `http://ollama:11434` (same network) |
-| Podman on macOS | `http://host.containers.internal:11434` |
+- **Ollama on host (Linux):** `http://host.docker.internal:11434` or `--network=host`
+- **Ollama on host (macOS):** `http://host.docker.internal:11434`
+- **Ollama in Docker:** `http://ollama:11434` (same network)
+- **Podman on macOS:** `http://host.containers.internal:11434`
 
 Set `OLLAMA_HOST=0.0.0.0` on Ollama to listen on all interfaces.

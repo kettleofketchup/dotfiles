@@ -10,13 +10,7 @@ Your data (chats, users, settings, uploads) lives in a Docker volume or local da
 | **Shared / team instance** | Pin a specific version (e.g. `:v0.8.6`) and use Diun for update notifications |
 | **Production / critical** | Pin a version, review release notes before upgrading, test in staging first |
 
-The `:main` tag always points to the latest build. For stability, pin a specific release tag:
-
-```
-ghcr.io/open-webui/open-webui:v0.8.6
-ghcr.io/open-webui/open-webui:v0.8.6-cuda
-ghcr.io/open-webui/open-webui:v0.8.6-ollama
-```
+The `:main` tag always points to the latest build. For stability, pin: `ghcr.io/open-webui/open-webui:v0.8.6[-cuda|-ollama]`
 
 ## Before You Update
 
@@ -78,38 +72,13 @@ Without a persistent `WEBUI_SECRET_KEY`, a new key is generated each time the co
 
 ### Verify the Update
 
-1. Check version in logs: `docker logs open-webui 2>&1 | head -20`
-2. Load the UI at http://localhost:3000
-3. If UI looks broken, clear browser cache (Ctrl+F5)
-4. If migration errors in logs, check release notes
+Check logs: `docker logs open-webui 2>&1 | head -20`. Clear browser cache if UI looks broken (Ctrl+F5).
 
 ## Rolling Back
 
-Pin a previous version tag.
+Pin a previous version tag (e.g., `:v0.8.3`). Docker: `docker rm -f open-webui && docker pull ...v0.8.3 && docker run ...`. Compose: change tag in `docker-compose.yml`, then `docker compose pull && docker compose up -d`. pip: `pip install open-webui==0.8.3`.
 
-### Docker Run
-
-```bash
-docker rm -f open-webui
-docker pull ghcr.io/open-webui/open-webui:v0.8.3
-docker run -d -p 3000:8080 -v open-webui:/app/backend/data \
-  -e WEBUI_SECRET_KEY="your-secret-key" \
-  --name open-webui --restart always \
-  ghcr.io/open-webui/open-webui:v0.8.3
-```
-
-### Docker Compose
-
-Change image tag in `docker-compose.yml` to the desired version, then `docker compose pull && docker compose up -d`.
-
-### Python (pip)
-
-```bash
-pip install open-webui==0.8.3
-open-webui serve
-```
-
-Database migrations are one-way. If the version you updated to ran a migration, rolling back the container does not undo it. Restore from a backup taken before the update.
+Database migrations are one-way -- rollback doesn't undo them. Restore from backup taken before the update.
 
 ## Update Notification Tools
 
@@ -121,34 +90,22 @@ Database migrations are one-way. If the version you updated to ran a migration, 
 
 ### Diun (Notification-Only)
 
-Alerts when updates are available without touching containers.
-
 ```yaml
 services:
   diun:
     image: crazymax/diun:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./data:/data
-    environment:
-      - DIUN_WATCH_SCHEDULE=0 */6 * * *
-      - DIUN_PROVIDERS_DOCKER=true
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock:ro", "./data:/data"]
+    environment: [DIUN_WATCH_SCHEDULE=0 */6 * * *, DIUN_PROVIDERS_DOCKER=true]
 ```
 
 ### Watchtower (Automated)
 
-The original `containrrr/watchtower` is no longer maintained and fails with Docker 29+. Use the [nicholas-fedor/watchtower](https://watchtower.nickfedor.com/) fork.
+Use [nicholas-fedor/watchtower](https://watchtower.nickfedor.com/) (original `containrrr/watchtower` fails with Docker 29+).
 
-**One-time update:**
 ```bash
+# One-time: 
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock nickfedor/watchtower --run-once open-webui
-```
-
-**Continuous (every 6 hours):**
-```bash
-docker run -d --name watchtower --restart unless-stopped \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  nickfedor/watchtower --interval 21600 open-webui
+# Continuous: add -d --name watchtower --restart unless-stopped --interval 21600
 ```
 
 ## Backup and Restore

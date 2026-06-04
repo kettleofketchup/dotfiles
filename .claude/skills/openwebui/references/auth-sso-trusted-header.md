@@ -118,50 +118,20 @@ volumes:
 
 ## oauth2-proxy
 
-oauth2-proxy is an authenticating reverse proxy that implements social OAuth providers and OIDC support.
+oauth2-proxy is an authenticating reverse proxy with social OAuth/OIDC support.
 
-Example with Google OAuth:
-
-```yaml
-services:
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    volumes:
-      - open-webui:/app/backend/data
-    environment:
-      - 'WEBUI_AUTH_TRUSTED_EMAIL_HEADER=X-Forwarded-Email'
-      - 'WEBUI_AUTH_TRUSTED_NAME_HEADER=X-Forwarded-User'
-    restart: unless-stopped
-  oauth2-proxy:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
-    environment:
-      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
-      OAUTH2_PROXY_UPSTREAMS: http://open-webui:8080/
-      OAUTH2_PROXY_PROVIDER: google
-      OAUTH2_PROXY_CLIENT_ID: REPLACEME_OAUTH_CLIENT_ID
-      OAUTH2_PROXY_CLIENT_SECRET: REPLACEME_OAUTH_CLIENT_ID
-      OAUTH2_PROXY_EMAIL_DOMAINS: REPLACEME_ALLOWED_EMAIL_DOMAINS
-      OAUTH2_PROXY_REDIRECT_URL: REPLACEME_OAUTH_CALLBACK_URL
-      OAUTH2_PROXY_COOKIE_SECRET: REPLACEME_COOKIE_SECRET
-      OAUTH2_PROXY_COOKIE_SECURE: "false"
-    restart: unless-stopped
-    ports:
-      - 4180:4180/tcp
-```
+Set `WEBUI_AUTH_TRUSTED_EMAIL_HEADER=X-Forwarded-Email` and `WEBUI_AUTH_TRUSTED_NAME_HEADER=X-Forwarded-User` in Open WebUI. Configure oauth2-proxy with `OAUTH2_PROXY_UPSTREAMS=http://open-webui:8080/` and your provider credentials. See [auth-sso-trusted-header-providers.md](auth-sso-trusted-header-providers.md) for full Docker Compose examples.
 
 ## Authentik
 
-Redirect URI: `<open-webui>/oauth/oidc/callback`
-
+Redirect URI: `{open-webui}/oauth/oidc/callback`. Set:
 ```
-ENABLE_OAUTH_SIGNUP=true
-OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
+ENABLE_OAUTH_SIGNUP=true  OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
 OAUTH_PROVIDER_NAME=Authentik
-OPENID_PROVIDER_URL=https://<authentik-url>/application/o/<App-name>/.well-known/openid-configuration
-OAUTH_CLIENT_ID=<Client-ID>
-OAUTH_CLIENT_SECRET=<Client-Secret>
+OPENID_PROVIDER_URL=https://{authentik}/application/o/{app-name}/.well-known/openid-configuration
+OAUTH_CLIENT_ID={id}  OAUTH_CLIENT_SECRET={secret}
 OAUTH_SCOPES=openid email profile
-OPENID_REDIRECT_URI=https://<open-webui>/oauth/oidc/callback
+OPENID_REDIRECT_URI=https://{open-webui}/oauth/oidc/callback
 ```
 
 ## Authelia

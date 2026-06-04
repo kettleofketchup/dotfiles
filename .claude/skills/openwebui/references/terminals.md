@@ -76,18 +76,9 @@ Set the shared API key in `.env`: `TERMINALS_API_KEY=change-me-to-a-strong-rando
 | `TERMINALS_MAX_CPU` | (empty) | Hard cap on CPU for user containers (e.g., `2`) |
 | `TERMINALS_MAX_MEMORY` | (empty) | Hard cap on memory (e.g., `4Gi`) |
 
-### Container lifecycle details
+### Container lifecycle
 
-- **Naming**: Containers named `terminals-{policy_id}-{user_id}`
-- **Health checks**: Orchestrator polls `/health` endpoint up to 15 seconds
-- **Reconciliation**: On restart, rediscovers existing containers by label
-- **Conflict handling**: Force-removes stale containers, retries up to 3 times
-
-### Limitations
-
-- Single host -- all containers run on one Docker host
-- No built-in HA -- if orchestrator goes down, sessions are interrupted (containers keep running and reconcile on restart)
-- Docker socket required
+Containers named `terminals-{policy_id}-{user_id}`. Health checks poll `/health` up to 15s. On restart, rediscovers by label. Force-removes stale containers (3 retries). Limitations: single host, no HA, Docker socket required.
 
 ## Kubernetes Operator
 
@@ -147,18 +138,12 @@ When `terminals.enabled` is `true`, the chart automatically sets `TERMINAL_SERVE
 4. On next request, new Pod provisioned with same PVC reattached
 5. User data persists across idle cycles
 
-### RBAC requirements
+### RBAC and Monitoring
 
-Operator ServiceAccount needs: get/list/watch/create/update/patch/delete on `terminals.openwebui.com`, pods, services, PVCs, secrets; create on events; get/list/watch/create/update/patch on configmaps and leases (Kopf leader election).
-
-### Monitoring
+Operator ServiceAccount: full CRUD on `terminals.openwebui.com`, pods, services, PVCs, secrets; configmaps and leases.
 
 ```bash
-kubectl get terminals -n open-webui
-kubectl describe terminal <name> -n open-webui
-kubectl get terminals -n open-webui -w
-kubectl logs -n open-webui deployment/<release>-terminals-operator --tail=50
-kubectl logs -n open-webui deployment/<release>-terminals-orchestrator --tail=50
+kubectl get terminals -n open-webui && kubectl logs -n open-webui deployment/<release>-terminals-operator --tail=50
 ```
 
-Terminals requires an Open WebUI Enterprise License.
+Requires an Open WebUI Enterprise License.

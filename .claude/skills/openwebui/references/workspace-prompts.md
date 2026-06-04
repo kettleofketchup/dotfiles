@@ -76,23 +76,7 @@ Automatically replaced with their value at runtime:
 
 ### Custom input variables
 
-Add variables to your prompt content and users get a popup form when they use the slash command.
-
-**Simple input** creates a single-line text field:
-```
-{{variable_name}}
-```
-
-**Typed input** creates a specific field type with configured properties:
-```
-{{variable_name | type:property="value"}}
-```
-
-All custom variables are **optional by default**. Add `:required` to make a field mandatory:
-```
-{{title | text:required}}
-{{notes | textarea:placeholder="Additional context (optional)"}}
-```
+Use `{{variable_name}}` for simple text input. Use `{{variable_name | type:property="value"}}` for typed inputs. All variables are **optional by default** — add `:required` to mandate: `{{title | text:required}}`
 
 ### Available input types
 
@@ -140,61 +124,17 @@ The `{{MESSAGES}}` variable has two distinct modifier types that work at differe
 | `END:N` | Last N messages | `{{MESSAGES:END:5}}` |
 | `MIDDLETRUNCATE:N` | First N/2 + last N/2 messages | `{{MESSAGES:MIDDLETRUNCATE:6}}` |
 
-With 20 messages, `{{MESSAGES:MIDDLETRUNCATE:6}}` keeps messages 1-3 and 18-20, skipping the 14 in the middle.
+**Pipe filters** (`|`) truncate content per message: `{{MESSAGES|start:300}}`, `{{MESSAGES|end:300}}`, `{{MESSAGES|middletruncate:500}}`.
 
-**Pipe filters** (pipe `|`) truncate the **content of each individual message** to a character limit:
+**Combine**: `{{MESSAGES:END:2|middletruncate:500}}` = last 2 messages, each capped at 500 chars.
 
-| Filter | What it does | Example |
-| :--- | :--- | :--- |
-| `\|start:N` | First N characters of each message | `{{MESSAGES\|start:300}}` |
-| `\|end:N` | Last N characters of each message | `{{MESSAGES\|end:300}}` |
-| `\|middletruncate:N` | First + last half of each message | `{{MESSAGES\|middletruncate:500}}` |
-
-**Combine both** to control which messages are included and how long each one is:
-
-| Syntax | What it does |
-| :--- | :--- |
-| `{{MESSAGES:END:2\|middletruncate:500}}` | Last 2 messages, each capped at 500 characters |
-| `{{MESSAGES:START:5\|start:200}}` | First 5 messages, each capped at 200 characters |
-| `{{MESSAGES:MIDDLETRUNCATE:10\|middletruncate:50}}` | First 5 + last 5 messages, each capped at 50 characters |
-
-**Warning**: Selectors count messages, not characters. `{{MESSAGES:MIDDLETRUNCATE:500}}` selects **500 messages**. To limit characters per message, use a pipe filter: `{{MESSAGES\|middletruncate:500}}`. Without pipe filters, a single pasted document can consume the entire context window.
+**Warning**: Selectors count messages (not chars). `{{MESSAGES:MIDDLETRUNCATE:500}}` selects 500 messages. Use pipe filter for char limits.
 
 ## Version History
 
-Every save creates a new version. When editing a prompt, the **History sidebar** shows all versions with the commit message, author, timestamp, and a "Live" badge on the active production version.
-
-**Preview** any version by clicking it. **Set as Production** to restore it as the active version. **Delete** old versions from the menu (the current production version cannot be deleted).
-
-Prompts created before the versioning update were automatically migrated with their content preserved as the initial "Live" version. The URL structure changed from command-based to ID-based, so existing bookmarks may need updating. As of v0.5.0, all variables are optional by default.
-
-## Examples
-
-### Bug report generator (`/bug_report`)
-
-```txt
-Generate a bug report with the following details:
-**Summary:** {{summary | text:placeholder="A brief summary of the issue":required}}
-**Priority:** {{priority | select:options=["Critical","High","Medium","Low"]:default="Medium":required}}
-**Steps to Reproduce:**
-{{steps | textarea:placeholder="1. Go to...\n2. Click on...\n3. See error...":required}}
-**Additional Context:** {{additional_context | textarea:placeholder="Browser version, OS, screenshots, etc."}}
-Please format this into a clear and complete bug report document.
-```
-
-### Title generation (task model template)
-
-Uses message selectors + pipe filters to keep context small:
-
-```txt
-Chat history:
-<chat_history>
-{{MESSAGES:END:2|middletruncate:500}}
-</chat_history>
-Generate a short title for this conversation.
-```
+Every save creates a new version. History sidebar shows commit message, author, timestamp, and "Live" badge. Preview versions by clicking; **Set as Production** to restore; delete old versions (not the active one). As of v0.5.0, all custom input variables are optional by default.
 
 ## Limitations
 
-- **Slash command namespace**: Public prompts appear in every user's `/` suggestions. Too many public prompts clutter the menu. Use the enable/disable toggle to keep inactive prompts out of suggestions.
-- **Optional by default**: All custom input variables are optional unless marked `:required`. If your prompt depends on a field, add `:required` explicitly.
+- Public prompts appear in every user's `/` suggestions — use the enable/disable toggle to reduce clutter
+- Variables are optional unless marked `:required`

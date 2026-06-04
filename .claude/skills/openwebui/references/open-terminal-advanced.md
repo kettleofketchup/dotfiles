@@ -75,60 +75,17 @@ secrets:
 
 ### Image variants
 
-| | `latest` | `slim` | `alpine` |
-| :--- | :--- | :--- | :--- |
-| **Best for** | General use, AI agents | Smaller footprint | Smallest footprint |
-| **Size** | ~4 GB | ~430 MB | ~230 MB |
-| **Includes** | Node.js, Python, compilers, ffmpeg, Docker CLI, data science libs | git, curl, jq | git, curl, jq |
-| **Can install packages** | Yes (has sudo) | No | No |
-| **Multi-user** | Yes | No | No |
-
-If you're not sure, use `latest`.
+`latest` (~4 GB, Node.js/Python/compilers/ffmpeg/data-science libs, has sudo, multi-user) | `slim` (~430 MB, git/curl/jq only) | `alpine` (~230 MB, git/curl/jq only). If unsure, use `latest`.
 
 ## Multi-User Setup
 
 ### Option 1: Built-in multi-user mode
 
-One container, separate accounts inside. Add one setting:
-
-```bash
-docker run -d --name open-terminal -p 8000:8000 \
-  -v open-terminal:/home \
-  -e OPEN_TERMINAL_MULTI_USER=true \
-  -e OPEN_TERMINAL_API_KEY=your-secret-key \
-  ghcr.io/open-webui/open-terminal
-```
-
-When someone uses the terminal through Open WebUI, Open Terminal automatically:
-
-1. Creates a personal account for that user (based on their Open WebUI user ID)
-2. Sets up a private home folder at `/home/{user-id}`
-3. Runs all their commands under their own account
-4. Restricts their file access to their own folder
-
-| | Separate per user | Shared |
-| :--- | :--- | :--- |
-| Home folder and files | Yes | |
-| Running commands | Yes | |
-| System packages | | Yes |
-| CPU and memory | | Yes |
-| Network access | | Yes |
-
-**Warning**: Good for small teams, not production. Everyone shares the same container. If one user runs a resource-heavy script, it affects everyone.
+Add `OPEN_TERMINAL_MULTI_USER=true` to the `docker run` command. Open Terminal creates per-user accounts at `/home/{user-id}`, runs commands under their account, and restricts file access. Shared: system packages, CPU/memory, network. **Warning**: suitable for small trusted teams only.
 
 ### Option 2: Per-user containers with Terminals
 
-For larger deployments or real isolation, **Terminals** gives each user their own container:
-
-- Full isolation -- each user's container is independent
-- On-demand provisioning -- containers created when users start a session, cleaned up when idle
-- Resource controls -- CPU, memory, and storage limits per user or per environment
-- Multiple environments -- different setups for different teams
-- Kubernetes support -- works with Docker, Kubernetes, and k3s
-
-Two deployment backends: **Docker Backend** (single Docker host) and **Kubernetes Operator** (CRD-based, production-grade).
-
-Terminals requires an Open WebUI Enterprise License.
+**Terminals** (Enterprise License required) provisions an isolated container per user on-demand. Full isolation, resource controls, multiple environments, Docker and Kubernetes backends.
 
 ## Security Best Practices
 
@@ -144,9 +101,7 @@ docker run -d --name open-terminal -p 8000:8000 \
   ghcr.io/open-webui/open-terminal
 ```
 
-The `--memory 2g` and `--cpus 2` flags prevent runaway processes from consuming all your machine's resources.
-
-**Warning**: Without Docker (bare metal mode), the AI can run any command with your user's permissions.
+Use `--memory 2g --cpus 2` to prevent runaway processes. **Warning**: Without Docker (bare metal), the AI can run any command with your user's permissions.
 
 ### Always set a password
 
@@ -184,11 +139,4 @@ Mounting the Docker socket (`-v /var/run/docker.sock:/var/run/docker.sock`) give
 
 ### Security checklist
 
-- Use Docker, not bare metal
-- Set a strong API key
-- Use admin-configured connections
-- Set memory and CPU limits
-- Use network isolation (internal Docker network)
-- Enable egress filtering if internet access isn't needed
-- Don't mount the Docker socket unless necessary
-- Use `slim` or `alpine` images if you don't need runtime package installs
+Use Docker; set a strong API key; use admin-configured connections; set memory/CPU limits; use internal Docker network isolation; enable egress filtering; avoid mounting Docker socket; use `slim`/`alpine` images when runtime package installs aren't needed.

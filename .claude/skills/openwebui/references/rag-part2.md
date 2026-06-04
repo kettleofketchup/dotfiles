@@ -1,10 +1,6 @@
 # RAG - Embedding, Re-indexing, Citations, and Advanced Features
 
-## RAG Embedding Support
-
-Change the RAG embedding model directly in the `Admin Panel` > `Settings` > `Documents` menu. This feature supports Ollama and OpenAI models, enabling you to enhance document processing according to your requirements.
-
-## Changing RAG Settings After Initial Setup
+## RAG Embedding Support and Changing RAG Settings After Initial Setup
 
 If you need to change your chunking configuration (chunk size, overlap) or embedding model after documents have already been indexed, it is important to understand what actions are required and what effects those changes will have.
 

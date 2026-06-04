@@ -136,30 +136,12 @@ The message structure looks like:
 
 # Temporal Awareness (Date & Time)
 
-For an AI to be truly helpful, it needs to understand the concept of time. Open WebUI ensures that models are aware of the current date, time, and timezone so they can provide contextually relevant answers.
-
-## System-Level Awareness
-
-By default, Open WebUI injects temporal variables into the model's environment via the system prompt. Even without specialized tools, most models are aware of:
-- **`CURRENT_DATE`**: Injected as YYYY-MM-DD.
-- **`CURRENT_TIME`**: Injected as HH:MM.
-- **`CURRENT_WEEKDAY`**: (e.g., Monday, Tuesday).
-
-These variables can be manually used in **Prompts** or **Model Files** using the `{{CURRENT_DATE}}` syntax.
+Open WebUI injects `CURRENT_DATE` (YYYY-MM-DD), `CURRENT_TIME` (HH:MM), and `CURRENT_WEEKDAY` into the system prompt. Use `{{CURRENT_DATE}}` syntax in Prompts or Model Files.
 
 ## Native Temporal Tools (Agentic)
 
-When using a model with **Native Function Calling** enabled, models gain granular control over time calculations and queries.
+With **Native Function Calling** enabled, models get:
+- **`get_current_timestamp`**: exact current Unix timestamp (UTC) and ISO string
+- **`calculate_timestamp`**: relative time arithmetic ("3 days ago", "next Friday")
 
-### Available Time Tools:
-- **`get_current_timestamp`**: The model can retrieve the exact current Unix timestamp (UTC) and ISO date string.
-- **`calculate_timestamp`**: The model can perform relative time arithmetic (e.g., "Calculate the date for 3 days ago" or "When is next Friday?").
-
-### Why use native tool calling for Time?
-While static variables tell the model "when it is now," native tools allow the model to **reason about time**.
-
-If you ask: *"Find the notes I wrote last Tuesday,"* a model without tools might guess the date incorrectly. A tool-equipped model will:
-1. **Calculate** the exact date of "last Tuesday" using `calculate_timestamp`.
-2. **Search** your notes using that specific date as a filter via `search_notes`.
-
-This precision is essential for reliable agentic workflows that involve searching history, scheduling tasks, or analyzing time-sensitive data.
+These tools allow the model to reason precisely about time, essential for searching history or scheduling tasks.

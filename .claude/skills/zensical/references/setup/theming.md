@@ -139,33 +139,4 @@ extra_javascript = ["javascripts/extra.js"]
 
 For instant navigation, use `document$.subscribe()` to reinitialize JS on page load.
 
-## Theme Overrides
-
-```toml
-[project.theme]
-custom_dir = "overrides"
-```
-
-Override blocks in `overrides/main.html`:
-```html
-{% extends "base.html" %}
-{% block htmltitle %}<title>Custom</title>{% endblock %}
-```
-
-Available blocks: analytics, announce, config, container, content, extrahead, fonts, footer, header, hero, htmltitle, libs, outdated, scripts, site_meta, site_nav, styles, tabs.
-
-Partial overrides: create matching files in `overrides/partials/`. Custom 404: `overrides/404.html`.
-
-## Analytics & Privacy
-
-```toml
-[project.extra.analytics]
-provider = "google"
-property = "G-XXXXXXXXXX"
-
-[project.extra.consent]
-title = "Cookie consent"
-description = "We use cookies..."
-```
-
-Feedback widget, custom analytics provider, and cookie consent configurable. See source URLs for full details.
+For theme overrides, analytics, cookie consent, and feedback widget configuration, see [theming-analytics.md](theming-analytics.md).

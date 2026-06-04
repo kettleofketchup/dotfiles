@@ -87,50 +87,11 @@ If using the `:cuda` Docker image with an older GPU, set `WHISPER_COMPUTE_TYPE=f
 
 ## OpenAI STT Integration
 
-### Quick Setup (UI)
+**UI:** Admin Panel > Settings > Audio > set Engine=`OpenAI`, Base URL=`https://api.openai.com/v1`, API Key, Model=`whisper-1`.
 
-1. Click your **profile icon** > **Admin Panel** > **Settings** > **Audio** tab
-2. Configure:
+**Env vars:** `AUDIO_STT_ENGINE=openai`, `AUDIO_STT_OPENAI_API_BASE_URL`, `AUDIO_STT_OPENAI_API_KEY`, `AUDIO_STT_MODEL=whisper-1`, `AUDIO_STT_SUPPORTED_CONTENT_TYPES`.
 
-| Setting | Value |
-|---------|-------|
-| **Speech-to-Text Engine** | `OpenAI` |
-| **API Base URL** | `https://api.openai.com/v1` |
-| **API Key** | Your OpenAI API key |
-| **STT Model** | `whisper-1` |
-| **Supported Content Types** | Leave empty for defaults, or set `audio/wav,audio/mpeg,audio/webm` |
-
-3. Click **Save**
-
-### Available Models
-
-| Model | Description |
-|-------|-------------|
-| `whisper-1` | OpenAI's Whisper large-v2 model, hosted in the cloud |
-
-### Environment Variables Setup (OpenAI)
-
-```yaml
-services:
-  open-webui:
-    environment:
-      - AUDIO_STT_ENGINE=openai
-      - AUDIO_STT_OPENAI_API_BASE_URL=https://api.openai.com/v1
-      - AUDIO_STT_OPENAI_API_KEY=sk-...
-      - AUDIO_STT_MODEL=whisper-1
-```
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `AUDIO_STT_ENGINE` | Set to `openai` | empty (uses local Whisper) |
-| `AUDIO_STT_OPENAI_API_BASE_URL` | OpenAI API base URL | `https://api.openai.com/v1` |
-| `AUDIO_STT_OPENAI_API_KEY` | Your OpenAI API key | empty |
-| `AUDIO_STT_MODEL` | STT model | `whisper-1` |
-| `AUDIO_STT_SUPPORTED_CONTENT_TYPES` | Allowed audio MIME types | `audio/*,video/webm` |
-
-### Supported Audio Formats
-
-By default, Open WebUI accepts `audio/*` and `video/webm`. OpenAI's Whisper API supports: `mp3`, `mp4`, `mpeg`, `mpga`, `m4a`, `wav`, `webm`.
+Accepted formats: `audio/*`, `video/webm`. Whisper API supports: mp3, mp4, mpeg, mpga, m4a, wav, webm.
 
 ### OpenAI vs Local Whisper
 
@@ -150,26 +111,17 @@ Set `WHISPER_COMPUTE_TYPE=float16` or `float32`. Switch to the standard Docker i
 
 ### Microphone Not Working
 
-1. Check browser permissions for microphone access
-2. Use HTTPS (some browsers require secure connections)
-3. Try Chrome (best web audio API support)
-4. Ensure you're using HTTPS or localhost
+Check browser permissions, use HTTPS (or localhost), try Chrome.
 
 ### Poor Recognition Accuracy
 
-- Set language explicitly: `WHISPER_LANGUAGE=en` (ISO 639-1 codes)
-- Enable multilingual: `WHISPER_MULTILINGUAL=true` for non-English languages
-- Use a larger model: `tiny`, `base`, `small`, `medium`, `large` (larger = more accurate but slower)
+- Set `WHISPER_LANGUAGE=en` (ISO 639-1); enable `WHISPER_MULTILINGUAL=true` for non-English
+- Use larger model: tiny/base/small/medium/large (larger = more accurate, slower)
 
 ### OpenAI STT Issues
 
-- Check your OpenAI API key is valid
-- Verify the API Base URL is correct
-- Check container logs for error messages
-- OpenAI auto-detects language; for forced language, use Local Whisper with `WHISPER_LANGUAGE`
+Verify API key validity, Base URL, check logs. OpenAI auto-detects language; use Local Whisper for forced language.
 
-## Cost Considerations
+## Cost
 
-- OpenAI charges per minute of audio. See [OpenAI Pricing](https://platform.openai.com/docs/pricing).
-- For free STT, use **Local Whisper** (default) or the browser's **Web API**.
-- For GPU issues, set `WHISPER_COMPUTE_TYPE=float16`.
+OpenAI charges per minute. For free STT: Local Whisper (default) or Web API. GPU issues: `WHISPER_COMPUTE_TYPE=float16`.

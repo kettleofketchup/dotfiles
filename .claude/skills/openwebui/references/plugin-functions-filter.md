@@ -145,11 +145,4 @@ Filters can only modify the request body, not outbound HTTP headers.
 
 ## Resolving the Base Model
 
-```python
-class Filter:
-    def inlet(self, body: dict, __model__: dict = None) -> dict:
-        base_model_id = None
-        if __model__ and "info" in __model__:
-            base_model_id = __model__["info"].get("base_model_id")
-        return body
-```
+Access `__model__["info"].get("base_model_id")` in your `inlet` method to determine the underlying base model for workspace model overlays.

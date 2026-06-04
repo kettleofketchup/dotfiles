@@ -125,32 +125,13 @@ Skills use the same Access Control system as other workspace resources:
 
 ## Use Cases
 
-### Code review standards
-
-Write your team's review checklist as a skill: naming conventions, error handling patterns, test coverage requirements. Attach it to your coding models so every review follows the same bar.
-
-### Writing style guide
-
-Document tone, formatting rules, and terminology in a skill. Attach it to content-writing models. Every draft follows your brand voice.
-
-### Troubleshooting playbooks
-
-Encode your runbook for common issues: "check logs first, verify config, test connectivity, escalate if X." The model follows the same diagnostic steps your senior engineers would.
-
-### Tool usage instructions
-
-Pair a skill with Open Terminal to teach the model *how* to use it well. "Always check exit codes. Use `set -e` in scripts. Stream output for commands that take more than 10 seconds."
+- **Code review standards**: team checklist (naming conventions, error handling, coverage) attached to coding models
+- **Writing style guide**: tone, formatting, terminology attached to content models
+- **Troubleshooting playbooks**: runbook encoded as skill so model follows diagnostic steps
+- **Tool usage instructions**: pair with Open Terminal to teach exit code checking, streaming, etc.
 
 ## Limitations
 
-### Plain text only
-
-Skills are instructions, not executable code. For actions that require computation, API calls, or system access, use Tools instead.
-
-### Context window with $ mention
-
-When injected via `$` mention, the full skill content goes into the system prompt. A very long skill attached to a model with a small context window may crowd out conversation history.
-
-### Lazy loading requires function calling
-
-Model-attached skills depend on the `view_skill` builtin tool, which requires native function calling to be enabled. Without it, the model receives only the manifest and cannot load the full instructions.
+- **Plain text only**: for computation, API calls, or system access, use Tools instead
+- **Context window with $ mention**: full skill content enters system prompt — long skills may crowd history
+- **Lazy loading requires function calling**: `view_skill` builtin tool needs native function calling; without it model only gets the manifest

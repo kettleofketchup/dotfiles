@@ -143,8 +143,4 @@ async def action(self, body: dict, __event_emitter__=None):
 
 ## Best Practices
 
-- Use async/await for I/O operations
-- Implement timeouts for external API calls
-- Provide progress updates for long-running operations
-- Use confirmation dialogs for destructive actions
-- Actions can return HTML content via Rich UI Embedding (renders as interactive iframes)
+Use async/await for I/O; implement timeouts for external API calls; provide progress updates for long-running ops; use confirmation dialogs for destructive actions. Actions can return HTML via Rich UI Embedding (renders as interactive iframes).

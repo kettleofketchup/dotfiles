@@ -9,14 +9,22 @@ Portable file server with resumable uploads, dedup, WebDAV, SFTP, FTP, TFTP, SMB
 
 ## References
 
-- [deployment.md](references/deployment.md) - Installation methods, Docker images, systemd, NixOS module, Synology DSM
-- [accounts-volumes.md](references/accounts-volumes.md) - Users, groups, permissions, volumes, config file format, volflags
-- [protocols.md](references/protocols.md) - HTTP/HTTPS, WebDAV, FTP/FTPS, SFTP, TFTP, SMB/CIFS configuration
-- [http-api.md](references/http-api.md) - REST/HTTP API endpoints for read, write, admin, search
-- [features.md](references/features.md) - Upload rules, dedup, thumbnails, media player, search, indexing, event hooks
-- [reverse-proxy.md](references/reverse-proxy.md) - Nginx, Traefik, Caddy, Apache, Cloudflare tunnel, real-IP, XFF
-- [idp-auth.md](references/idp-auth.md) - Authelia/authentik/Tailscale integration, header auth, dynamic volumes, group filters
-- [security.md](references/security.md) - Safety profiles, CORS, filekeys, password hashing, HTTPS, bans, sandboxing
+- [deployment.md](references/deployment.md) - Installation methods: SFX, pip, Arch, Homebrew, Nix, Android, iOS, optional deps
+- [deployment-docker.md](references/deployment-docker.md) - Docker images, Compose, systemd, NixOS module, Synology DSM
+- [accounts-volumes.md](references/accounts-volumes.md) - Users, groups, permissions, volumes, config file format, password hashing
+- [volflags.md](references/volflags.md) - Per-volume flags: indexing, dedup, upload rules, display, filesystem, tag parsers
+- [protocols.md](references/protocols.md) - HTTP/HTTPS, WebDAV, rclone, zeroconf, QR code, client tools
+- [protocols-ftp-sftp-smb.md](references/protocols-ftp-sftp-smb.md) - FTP/FTPS, SFTP, TFTP, SMB/CIFS configuration
+- [http-api.md](references/http-api.md) - Read endpoints: listing, download, archive, search, thumbnails, Prometheus
+- [http-api-write.md](references/http-api-write.md) - Write endpoints: upload, file ops, shares, up2k protocol, curl examples
+- [features.md](references/features.md) - Indexing, search, dedup, zip downloads, performance tuning, special files
+- [features-upload-media.md](references/features-upload-media.md) - Upload rules, thumbnails, media player, event hooks, shares, misc features
+- [reverse-proxy.md](references/reverse-proxy.md) - Real-IP config, nginx, unix socket, copyparty config, troubleshooting
+- [reverse-proxy-other.md](references/reverse-proxy-other.md) - Caddy, Traefik, Apache, HAProxy, Cloudflare tunnel, performance benchmarks
+- [idp-auth.md](references/idp-auth.md) - Header auth config, dynamic volumes, group filters, idp-store, security
+- [idp-auth-integrations.md](references/idp-auth-integrations.md) - Authelia, authentik, Tailscale integration examples
+- [security.md](references/security.md) - Safety profiles (-s/-ss/-sss), XSS, CORS, filekeys, dirkeys, password hashing
+- [security-access.md](references/security-access.md) - Ban system, IP access control, session management, sandbox options
 
 ## Quick Start
 

@@ -130,50 +130,18 @@ services:
 
 ## Response Splitting
 
-When reading long responses, Open WebUI can split text into chunks before sending them to the TTS engine. This is configured in **Admin Panel > Settings > Audio** under **Response Splitting**.
+Configure in **Admin Panel > Settings > Audio > Response Splitting**: `Punctuation` (default, sentence boundaries), `Paragraphs` (paragraph breaks), `None` (whole response). Punctuation recommended for best streaming + pacing.
 
-| Option | Description |
-|--------|-------------|
-| **Punctuation** (default) | Splits at sentence boundaries: periods (`.`), exclamation marks (`!`), question marks (`?`), and newlines. Best for natural pacing. |
-| **Paragraphs** | Splits only at paragraph breaks (double newlines). Results in longer audio chunks. |
-| **None** | Sends the entire response as one chunk. May cause delays before audio starts on long responses. |
+## External TTS Services
 
-**Punctuation** mode is recommended for most use cases. It provides the best balance of streaming performance (audio starts quickly) and natural speech pacing.
-
-## Using External TTS Services
-
-When running Open WebUI in Docker with an external TTS service:
-
-```yaml
-environment:
-  - AUDIO_TTS_ENGINE=openai
-  - AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:5050/v1
-  - AUDIO_TTS_OPENAI_API_KEY=your-api-key
-```
-
-Use `host.docker.internal` on Docker Desktop (Windows/Mac) to access services on the host. On Linux, use the host IP or container networking.
+Docker: set `AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:5050/v1` (Windows/Mac) or host IP (Linux).
 
 ## Troubleshooting
 
-### No Audio Plays
+- **No audio**: verify API key has Audio API access, check Base URL and browser console (F12)
+- **Quality issues**: switch `tts-1` to `tts-1-hd` (higher latency)
+- **Rate limits**: cache common phrases, use `tts-1` (fewer tokens)
 
-1. Check your OpenAI API key is valid and has Audio API access
-2. Verify the API Base URL is correct (`https://api.openai.com/v1`)
-3. Check browser console (F12) for errors
+## Cost
 
-### Audio Quality Issues
-
-- Switch from `tts-1` to `tts-1-hd` for higher quality
-- Note: `tts-1-hd` has slightly higher latency
-
-### Rate Limits
-
-OpenAI has rate limits on the Audio API. If you're hitting limits:
-- Consider caching common phrases
-- Use `tts-1` instead of `tts-1-hd` (uses fewer tokens)
-
-## Cost Considerations
-
-OpenAI charges per character for TTS. See [OpenAI Pricing](https://platform.openai.com/docs/pricing) for current rates. Note that `tts-1-hd` costs more than `tts-1`.
-
-For a free alternative, consider OpenAI Edge TTS which uses Microsoft's free Edge browser TTS.
+OpenAI charges per character. `tts-1-hd` costs more than `tts-1`. Free alternative: OpenAI Edge TTS (Microsoft's Edge browser TTS).

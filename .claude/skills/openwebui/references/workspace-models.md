@@ -142,10 +142,4 @@ Switch models mid-conversation without losing context. Select up to two models s
 
 ## Limitations
 
-### Preset, not fine-tune
-
-Model presets configure behavior through system prompts and tool bindings. They do not modify the underlying model weights. For deep behavioral changes, you need actual fine-tuning.
-
-### Fallback requires configuration
-
-If a base model becomes unavailable, the preset will fail unless `ENABLE_CUSTOM_MODEL_FALLBACK` is set to `True` and a default model is configured in Admin Panel > Settings > Models.
+**Preset, not fine-tune:** Presets configure behavior via system prompts and bindings; they don't modify model weights. **Fallback:** Set `ENABLE_CUSTOM_MODEL_FALLBACK=True` and configure a default model in Admin Panel > Settings > Models to handle unavailable base models.

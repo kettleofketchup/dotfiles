@@ -1,6 +1,6 @@
 ---
 name: cloudflare
-description: Cloudflare Tunnel (cloudflared) deployment on Kubernetes, Cloudflare Access Service Tokens for machine-to-machine auth, DNS management, and integration with Traefik IngressRoutes and Authentik forwardAuth. Use when deploying cloudflared tunnels, creating Access applications and service tokens, configuring dual-route IngressRoutes for human vs machine access, managing Cloudflare DNS records via API, or troubleshooting tunnel connectivity and Access policy issues.
+description: Cloudflare Tunnel on K8s, Access Service Tokens, DNS, Traefik IngressRoutes, Authentik forwardAuth. Use for cloudflared tunnels, Access apps, dual-route IngressRoutes, DNS API, or tunnel issues.
 ---
 
 # Cloudflare Tunnel + Access + Traefik Integration
@@ -27,6 +27,7 @@ Traefik = inner gate (routes by header presence, applies forwardAuth for humans)
 | Task | Reference |
 |------|-----------|
 | Tunnel deployment on K8s | [references/tunnel-kubernetes.md](references/tunnel-kubernetes.md) |
+| Tunnel to Traefik connection | [references/tunnel-traefik.md](references/tunnel-traefik.md) |
 | Access Service Tokens API | [references/access-service-tokens.md](references/access-service-tokens.md) |
 | Traefik dual-route pattern | [references/traefik-integration.md](references/traefik-integration.md) |
 | DNS management | [references/dns-management.md](references/dns-management.md) |

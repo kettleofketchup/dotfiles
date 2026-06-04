@@ -118,64 +118,21 @@ When both services share a Docker Compose network, use the service name as the h
 
 ## Connecting to Open WebUI
 
-### Recommended: Admin Panel
+**Admin Panel (recommended):** Admin Panel > Settings > Integrations > Open Terminal section (NOT External Tools) > **+** > fill URL, API Key, Auth Type (Bearer) > Save. Enable native function calling in Workspace > Models > Capabilities. Pre-configure via `TERMINAL_SERVER_CONNECTIONS` env var for Docker deployments.
 
-1. Click your **name** at the bottom of the left sidebar, then click **Admin Panel**.
-2. Go to **Settings > Integrations**.
-3. Find the **Open Terminal** section (do NOT add it under "External Tools" or "Tool Servers").
-4. Click **+** and fill in: URL (`http://localhost:8000` or `http://open-terminal:8000`), API Key, Auth Type (Bearer).
-5. Click **Save**. A green "Connected" indicator confirms the connection.
-6. (Optional) Restrict access to specific groups via the access control button.
-7. In the chat input, click the **terminal button** (cloud icon) and select your terminal under **System**.
-
-### Enable native function calling
-
-1. Go to **Workspace > Models**
-2. Edit the model you're using
-3. Under **Capabilities**, enable **Native Function Calling**
-4. Save
-
-Without native function calling, Open WebUI falls back to prompt-based tool calling, which is less reliable.
-
-Pre-configure via environment variable: For Docker deployments, use `TERMINAL_SERVER_CONNECTIONS` to configure terminal connections automatically at startup.
-
-### Personal Settings (testing only)
-
-Adding a terminal via personal Settings sends the API key to your browser and routes requests directly from it. For anything beyond quick testing, use Admin Settings instead.
+**Personal Settings (testing only):** Routes requests through browser. Use Admin Settings for production.
 
 ### Troubleshooting
 
-**"Connection failed" or timeout** -- URL depends on your setup:
-
-| Your setup | URL to use |
-| :--- | :--- |
-| Docker Compose (recommended) | `http://open-terminal:8000` |
-| Separate Docker containers | `http://host.docker.internal:8000` |
-| Both on same machine, no Docker | `http://localhost:8000` |
-| Open Terminal on another machine | `http://that-machines-ip:8000` |
-
-Quick connectivity check:
-```bash
-docker exec open-webui curl -s http://open-terminal:8000/health
-```
-
-**Terminal shows up but AI doesn't use it**: Ensure the toggle is on, refresh the page, and confirm your model supports tool calling.
-
-**Wrong API key**: Check with `docker logs open-terminal` for the `API key:` line.
+- Docker Compose: `http://open-terminal:8000`; Separate containers: `http://host.docker.internal:8000`; Same machine: `http://localhost:8000`
+- Quick check: `docker exec open-webui curl -s http://open-terminal:8000/health`
+- AI doesn't use terminal: toggle on, refresh, confirm model supports tool calling
+- Wrong API key: `docker logs open-terminal | grep "API key:"`
 
 ## File Browser
 
-When Open Terminal is connected, a **file browser** appears in the sidebar of your chat.
-
-- **Browsing**: Click folders to navigate, click files to preview. Breadcrumb bar at top.
-- **Previewing**: Text/code files with syntax highlighting. PDFs render inline. CSVs render as formatted tables. Markdown shows rendered preview with raw toggle. Images display inline.
-- **Uploading**: Drag and drop files onto the file browser. Files upload to whichever directory you're viewing.
-- **Downloading**: Click the download button on any file to save results to your computer.
-- **Editing**: Click the edit icon on text files to make quick changes.
-- **Creating/Deleting**: Create new files and folders, or delete items directly from the file browser.
-
-The file browser refreshes automatically when the AI creates or changes files, remembers which folder you were in across chat switches, and updates when switching between terminals.
+When Open Terminal is connected, a **file browser** appears in the chat sidebar. Features: navigate folders, preview text/code (syntax highlighting)/PDFs/CSVs/markdown/images, upload by drag-and-drop, download files, edit text files in-place, create/delete items. Refreshes automatically when AI creates or changes files.
 
 ## Enterprise Multi-User
 
-For isolated, per-user terminal containers, see **Terminals** which provisions a dedicated Open Terminal instance for every user with automatic lifecycle management, resource controls, and policy-based environments.
+For isolated, per-user terminal containers, see **Terminals** — provisions a dedicated Open Terminal per user with lifecycle management, resource controls, and policy-based environments.

@@ -97,34 +97,16 @@ Delete `webui.db` (removes ALL data including accounts and chat history).
 
 ### Knowledge Base Not Working with Model
 
-Open WebUI has two RAG modes: Default (auto-injects context) and Native Function Calling (model must actively call tools). If global `Function Calling: native` is set in Admin > Settings > Models, all models inherit it. Per-model settings override globals. For native mode, enable Builtin Tools and add system prompt hints. Or disable Native Function Calling for classic auto-injection behavior.
+Two RAG modes: Default (auto-injects context) and Native Function Calling (model calls tools). If global `Function Calling: native` is set, all models inherit it. For native mode: enable Builtin Tools and add system prompt hints. Disable Native FC for classic auto-injection.
 
 ## SSO & OAuth Troubleshooting
 
-**Common mistakes:** Using wrong env var names (use `OAUTH_CLIENT_ID` not `OPENID_CLIENT_ID`).
-
-**Required OIDC vars:** `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `OPENID_PROVIDER_URL`, `ENABLE_OAUTH_SIGNUP=true`.
-
-**Callback URLs:** OIDC: `/oauth/oidc/callback`, Microsoft: `/oauth/microsoft/callback`, Google: `/oauth/google/callback`.
-
-**Persistent config conflicts:** `ENABLE_OAUTH_PERSISTENT_CONFIG` defaults to `false` (env vars take priority). Set explicitly if DB values override env vars.
-
-**Cookie issues:** Use `WEBUI_SESSION_COOKIE_SAME_SITE=lax`, set `WEBUI_SECRET_KEY` consistently.
-
-**CSRF errors:** Verify `WEBUI_URL` matches exactly, set `WEBUI_SECRET_KEY` and `OAUTH_SESSION_TOKEN_ENCRYPTION_KEY`.
-
-**Multi-instance:** Same `WEBUI_SECRET_KEY` + `OAUTH_SESSION_TOKEN_ENCRYPTION_KEY` on all replicas, configure Redis.
-
-**Nginx caching:** Exclude `/api`, `/oauth`, `/callback`, `/login`, `/ws` from server-side caching.
-
-**Kubernetes YAML:** Watch for trailing spaces in env var names inside quotes.
-
-**Provider-specific:**
-- Microsoft: Use `MICROSOFT_CLIENT_ID`/`SECRET`/`TENANT_ID`, not generic OIDC vars. Set `OPENID_PROVIDER_URL=https://login.microsoftonline.com/TENANT_ID/v2.0/.well-known/openid-configuration`.
-- Authentik: `OPENID_PROVIDER_URL=https://authentik-domain/application/o/app-slug/.well-known/openid-configuration`
-- Google: `OPENID_PROVIDER_URL=https://accounts.google.com/.well-known/openid-configuration`
-
-**Debug:** Set `GLOBAL_LOG_LEVEL=DEBUG`, check browser cookies for `oauth_session_id`, test without reverse proxy.
+- Use `OAUTH_CLIENT_ID` (not `OPENID_CLIENT_ID`); required vars: `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `OPENID_PROVIDER_URL`, `ENABLE_OAUTH_SIGNUP=true`
+- Callbacks: OIDC `/oauth/oidc/callback`, Microsoft `/oauth/microsoft/callback`, Google `/oauth/google/callback`
+- Cookie issues: `WEBUI_SESSION_COOKIE_SAME_SITE=lax`; CSRF: verify `WEBUI_URL` matches exactly, set `WEBUI_SECRET_KEY`/`OAUTH_SESSION_TOKEN_ENCRYPTION_KEY`
+- Multi-instance: same `WEBUI_SECRET_KEY` on all replicas + Redis; Nginx: exclude `/api,/oauth,/callback,/login,/ws` from caching
+- Microsoft: use `MICROSOFT_CLIENT_ID`/`SECRET`/`TENANT_ID`; Authentik: `OPENID_PROVIDER_URL=https://{domain}/application/o/{slug}/.well-known/openid-configuration`
+- Debug: `GLOBAL_LOG_LEVEL=DEBUG`, check `oauth_session_id` cookie, test without reverse proxy
 
 ## Audio Troubleshooting
 
@@ -153,61 +135,6 @@ Open WebUI has two RAG modes: Default (auto-injects context) and Native Function
 - **A1111 connection refused:** Run with `--api` flag
 - **Docker connectivity:** Use `http://host.docker.internal:7860`
 
-## Scaling & Multi-Replica
+## Scaling, Performance & DB Migration
 
-**Core requirements:** Same `WEBUI_SECRET_KEY` on all replicas, PostgreSQL (not SQLite), Redis for WebSockets, shared storage (RWX PVC), external vector DB (not default ChromaDB).
-
-**Login loops/401:** Different secret keys across replicas. Fix: set same `WEBUI_SECRET_KEY`.
-
-**WebSocket 403:** Configure `CORS_ALLOW_ORIGIN` with all access URLs, enable Redis for WebSockets.
-
-**Config mismatch:** Set `REDIS_URL` for Pub/Sub config sync across replicas.
-
-**DB locked errors:** Migrate from SQLite to PostgreSQL.
-
-**Worker crashes during upload:** Switch from default ChromaDB to pgvector/milvus/qdrant or ChromaDB HTTP mode.
-
-**Safe update procedure:** Either designate one migration pod (`ENABLE_DB_MIGRATIONS=True` on master only) or scale to 1 replica during upgrades.
-
-**Pool sizing:** `Total connections = (POOL_SIZE + MAX_OVERFLOW) x replicas x UVICORN_WORKERS`. Keep under DB `max_connections`.
-
-**Function/tool pip crashes:** Set `ENABLE_PIP_INSTALL_FRONTMATTER_REQUIREMENTS=False`, pre-install packages in Dockerfile.
-
-## Performance & Optimization
-
-**Task models:** Use fast, cheap non-reasoning models (gpt-5-nano, gemma3:1b) for title/tag/query generation.
-
-**Model caching:** `ENABLE_BASE_MODELS_CACHE=True` + `MODELS_CACHE_TTL=300` for production.
-
-**KV cache:** `RAG_SYSTEM_CONTEXT=True` for fast follow-up responses.
-
-**Database:** PostgreSQL mandatory for scale. `ENABLE_REALTIME_CHAT_SAVE=False` always. `DATABASE_ENABLE_SESSION_SHARING=True` for PostgreSQL with resources.
-
-**Content extraction:** Default pypdf leaks memory. Use `CONTENT_EXTRACTION_ENGINE=tika` in production.
-
-**Embeddings:** Default SentenceTransformers uses ~500MB/worker. Use `RAG_EMBEDDING_ENGINE=openai` or `ollama` at scale.
-
-**High concurrency:** `THREAD_POOL_SIZE=2000`, `CHAT_RESPONSE_STREAM_DELTA_CHUNK_SIZE=7`, `AIOHTTP_CLIENT_TIMEOUT=1800`.
-
-**Cloud latency:** Co-locate DB with app (aim for <2ms latency). Use SSD block storage, not NFS/SMB for SQLite.
-
-## Database Migration (Manual)
-
-Only needed if automatic migration fails. Always backup first.
-
-```bash
-docker stop open-webui
-docker run --rm -it -v open-webui:/app/backend/data --entrypoint /bin/bash ghcr.io/open-webui/open-webui:main
-cd /app/backend/open_webui
-export DATABASE_URL="sqlite:////app/backend/data/webui.db"
-export WEBUI_SECRET_KEY=$(cat /app/backend/.webui_secret_key)
-alembic current -v    # Check current state
-alembic heads          # Check target
-alembic upgrade head   # Apply migrations
-```
-
-**"Table already exists":** Previous migration partially completed. Options: restore backup, drop table + re-run, or `alembic stamp <revision>` (skips data backfill).
-
-**"No such table":** Migrations didn't apply. Run `alembic upgrade head`.
-
-**Multiple failures after version jump:** Step through one migration at a time. Stamp past "already exists" errors, investigate other errors.
+See [troubleshooting-scaling.md](troubleshooting-scaling.md) for scaling/multi-replica fixes, performance tuning, and manual database migration.

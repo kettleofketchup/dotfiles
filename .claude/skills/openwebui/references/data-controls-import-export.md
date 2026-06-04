@@ -88,48 +88,7 @@ If the objects in the array do **not** have a `chat` key, the entire object is t
 
 ### Field Reference
 
-#### Top-Level Chat Object (Standard Format)
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `chat` | object | Yes | The conversation data (see Chat Data below) |
-| `meta` | object | No | Metadata such as `tags` (array of strings). Defaults to `{}` |
-| `pinned` | boolean | No | Whether the chat is pinned. Defaults to `false` |
-| `folder_id` | string or null | No | ID of the folder to place the chat in. Defaults to `null` |
-| `created_at` | integer or null | No | Unix timestamp (seconds) for when the chat was created |
-| `updated_at` | integer or null | No | Unix timestamp (seconds) for when the chat was last updated |
-
-#### Chat Data Object
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `title` | string | No | The conversation title. Defaults to `"New Chat"` |
-| `models` | string[] | No | List of model identifiers used in the conversation |
-| `history` | object | Yes | Contains the message tree (see History below) |
-| `options` | object | No | Chat-level options/parameters |
-
-#### History Object
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `currentId` | string | Yes | ID of the last message in the active conversation branch |
-| `messages` | object | Yes | A map of message ID to message object (see Message below) |
-
-#### Message Object
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `id` | string | Yes | Unique identifier for the message |
-| `parentId` | string or null | Yes | ID of the parent message, or `null` for the first message |
-| `childrenIds` | string[] | Yes | Array of child message IDs. Empty array `[]` for the last message |
-| `role` | string | Yes | Either `"user"` or `"assistant"` |
-| `content` | string | Yes | The message text (supports Markdown) |
-| `model` | string | No | Model identifier (relevant for assistant messages) |
-| `done` | boolean | No | Whether the response is complete |
-| `timestamp` | integer | No | Unix timestamp (seconds) for the message |
-| `context` | string or null | No | Additional context for the message |
-
-Messages use a **tree structure** rather than a flat list. Each message references its parent via `parentId` and its children via `childrenIds`. This allows Open WebUI to support branching conversations (e.g. editing a message and getting a different response). The `history.currentId` field points to the last message in the currently active branch.
+See [data-controls-import-schema.md](data-controls-import-schema.md) for the complete field reference tables (top-level, chat data, history, and message objects).
 
 ### ChatGPT Export Format
 
@@ -163,17 +122,8 @@ This uses the legacy format (no `chat` wrapper) with a single user message.
 
 ## FAQ
 
-**Q: Will importing chats overwrite my existing conversations?**
-**A:** No. Imported chats are added alongside your existing conversations.
-
-**Q: Can I import chats from Claude, Gemini, or other platforms?**
-**A:** There is no built-in converter for these platforms. You would need to transform your export into the JSON structure documented above. The key requirement is building the message tree with correct `parentId` / `childrenIds` relationships.
-
-**Q: Is there a size limit for imports?**
-**A:** There's no hard-coded limit, but very large files may take longer to process. The practical limit depends on your server configuration and available memory.
-
-**Q: What happens if I import the same file twice?**
-**A:** Each import creates new chats with fresh IDs, so you will end up with duplicate conversations.
-
-**Q: What message roles are supported?**
-**A:** The import supports `"user"` and `"assistant"` roles. System messages are typically set via model configurations rather than stored in the chat history.
+- **Will importing overwrite existing chats?** No, imported chats are added alongside existing ones.
+- **Can I import from Claude/Gemini?** No built-in converter; transform to the JSON format above.
+- **Size limit?** No hard limit; large files may take longer and depend on server memory.
+- **Import same file twice?** Creates duplicates (each import gets fresh IDs).
+- **Supported roles?** `"user"` and `"assistant"` only; system messages are set via model config.

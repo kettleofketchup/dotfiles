@@ -90,30 +90,11 @@ Ollama defaults to **2048-token** context -- set to **8192+** (preferably **16,0
 |----------|---------|-------------|
 | `CONTENT_EXTRACTION_ENGINE` | `''` | `''` (default), `tika`, `docling`, `mistral` |
 
-### Apache Tika
-```yaml
-services:
-  tika:
-    image: apache/tika:latest-full
-    ports: ["9998:9998"]
-```
-`TIKA_SERVER_URL` = `http://tika:9998`
+### Document Extraction Engines
 
-### Docling
-```yaml
-services:
-  docling-serve:
-    image: quay.io/docling-project/docling-serve-cu128:latest
-    ports: ["5001:5001"]
-    environment:
-      - UVICORN_WORKERS=1  # Must be 1
-      - DOCLING_SERVE_ENABLE_UI=true
-```
-
-Parameters: `pdf_backend` (`dlparse_v1`/`v2`/`v4`), `table_mode` (`fast`/`accurate`), `ocr_engine` (`tesseract`/`easyocr`/`rapidocr`), `pipeline` (`standard`/`fast`)
-
-### Mistral OCR
-Get API key from console.mistral.ai > Admin Panel > Settings > Documents > "Mistral OCR"
+- **Apache Tika**: `apache/tika:latest-full` on port 9998; set `TIKA_SERVER_URL=http://tika:9998`
+- **Docling**: `quay.io/docling-project/docling-serve-cu128:latest` on port 5001; set `UVICORN_WORKERS=1`. Params: `pdf_backend`, `table_mode`, `ocr_engine`, `pipeline`
+- **Mistral OCR**: Get API key from console.mistral.ai > Admin Panel > Settings > Documents
 
 ---
 
@@ -144,35 +125,8 @@ Messages use tree structure (parent/child) supporting branching conversations.
 
 ---
 
-## Memory & Personalization
+## Memory, Direct Connections & Google Drive
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_MEMORIES` | `True` | Global toggle |
-| `USER_PERMISSIONS_FEATURES_MEMORIES` | `True` | Role/group access |
-
-### Native Memory Tools (Agentic Mode)
-`add_memory`, `search_memories`, `replace_memory_content`, `delete_memory`, `list_memories`
-
-Requires Native Function Calling + frontier models.
-
----
-
-## Direct Connections
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_DIRECT_CONNECTIONS` | `True` | Enable browser-to-provider direct comms |
-
-API keys stored in browser localStorage. Provider must have CORS configured.
-
----
-
-## Google Drive & YouTube
-
-| Variable | Description |
-|----------|-------------|
-| `ENABLE_GOOGLE_DRIVE_INTEGRATION` | Enable Drive file access |
-| `GOOGLE_DRIVE_CLIENT_ID` | OAuth 2.0 client ID |
-| `GOOGLE_DRIVE_API_KEY` | API key |
-| `YOUTUBE_API_KEY` | YouTube data API key |
+- **Memory**: `ENABLE_MEMORIES=True`, `USER_PERMISSIONS_FEATURES_MEMORIES=True`. Native agentic tools: `add_memory`, `search_memories`, `replace_memory_content`, `delete_memory`, `list_memories` (requires Native Function Calling + frontier models)
+- **Direct Connections**: `ENABLE_DIRECT_CONNECTIONS=True` — browser-to-provider comms; API keys in localStorage; provider needs CORS
+- **Google Drive**: `ENABLE_GOOGLE_DRIVE_INTEGRATION`, `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_API_KEY`; **YouTube**: `YOUTUBE_API_KEY`

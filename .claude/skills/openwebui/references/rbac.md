@@ -142,14 +142,8 @@ Groups serve two primary purposes:
 - **Permission Groups** (prefix `[Perms]`): For granting features. Set "Who can share" to No one. Disable all sharing.
 - **Sharing Groups** (prefix `Team-`): For organizing people. Set "Who can share" to Members/Anyone. Disable all permissions. Rely on Global Defaults for feature rights.
 
-### Creation Methods
+### Creation and ACLs
 
-- **Manual Creation:** Via Admin Panel > Groups
-- **OAuth Synchronization:** With `ENABLE_OAUTH_GROUP_MANAGEMENT`, groups sync from OAuth provider. `ENABLE_OAUTH_GROUP_CREATION` auto-creates missing groups.
-
-### Resource Access (ACLs)
-
-1. Set resource visibility to Private or Restricted
-2. Grant access to specific Groups or individual users with Read or Write permission
-
-Access grants are stored as normalized entries with Resource (type + ID), Principal (group or user), and Permission (read or write). Public access uses a wildcard (`*`) principal.
+- **Manual**: Admin Panel > Groups
+- **OAuth sync**: `ENABLE_OAUTH_GROUP_MANAGEMENT`; `ENABLE_OAUTH_GROUP_CREATION` auto-creates missing groups
+- **ACLs**: Set resource to Private/Restricted, then grant Groups or users Read/Write. Public access uses wildcard (`*`) principal.

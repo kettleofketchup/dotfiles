@@ -124,36 +124,16 @@ If `SCIM_AUTH_PROVIDER` is not set while SCIM is enabled, any operation that req
 # List users
 curl -H "Authorization: Bearer your-scim-token" \
   https://your-domain.com/api/v1/scim/v2/Users
-
 # Create a test user
-curl -X POST \
-  -H "Authorization: Bearer your-scim-token" \
+curl -X POST -H "Authorization: Bearer your-scim-token" \
   -H "Content-Type: application/scim+json" \
-  -d '{
-    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
-    "userName": "test@example.com",
-    "externalId": "idp-user-id-123",
-    "displayName": "Test User",
-    "name": {"givenName": "Test", "familyName": "User"},
-    "emails": [{"value": "test@example.com", "primary": true}],
-    "active": true
-  }' \
+  -d '{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"userName":"test@example.com","active":true}' \
   https://your-domain.com/api/v1/scim/v2/Users
 ```
 
-## Security Considerations
+## Security & Limitations
 
-1. **Use HTTPS** in production to protect the bearer token
-2. **Secure Token Storage**: Store the SCIM token securely and rotate periodically
-3. **IP Allowlisting**: Consider restricting SCIM API access to your identity provider's IPs
-4. **Audit Logging**: SCIM operations are logged for security auditing
-
-## Limitations
-
-- Custom schema extensions are not supported
-- Bulk operations are not implemented
-- ETags for resource versioning are not supported
-
-## Integration with SSO
-
-SCIM works best combined with SSO. Typical setup: SCIM for automated user provisioning + OIDC for user authentication.
+- Use HTTPS in production; store and rotate `SCIM_TOKEN` securely
+- Consider IP allowlisting for SCIM API access; operations are audit-logged
+- Custom schema extensions, bulk operations, and ETags are not supported
+- Best practice: combine SCIM provisioning with OIDC for user authentication

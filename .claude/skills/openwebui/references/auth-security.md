@@ -91,18 +91,7 @@ Header: `Cf-Access-Authenticated-User-Email`.
 
 ## LDAP Authentication
 
-| Variable | Example | Description |
-|----------|---------|-------------|
-| `ENABLE_LDAP` | `true` | Enable LDAP |
-| `LDAP_SERVER_HOST` | `localhost` | Host (no protocol prefix) |
-| `LDAP_SERVER_PORT` | `389` | 389=plaintext/StartTLS, 636=LDAPS |
-| `LDAP_USE_TLS` | `false` | TLS toggle |
-| `LDAP_APP_DN` | `cn=admin,dc=example,dc=org` | Bind DN |
-| `LDAP_APP_PASSWORD` | `admin` | Bind password |
-| `LDAP_SEARCH_BASE` | `dc=example,dc=org` | Search base |
-| `LDAP_ATTRIBUTE_FOR_USERNAME` | `uid` | Username attribute |
-| `LDAP_ATTRIBUTE_FOR_MAIL` | `mail` | Email attribute |
-| `LDAP_SEARCH_FILTER` | `(memberOf=...)` | Optional filter |
+Key vars: `ENABLE_LDAP=true`, `LDAP_SERVER_HOST`, `LDAP_SERVER_PORT` (389/636), `LDAP_USE_TLS`, `LDAP_APP_DN`, `LDAP_APP_PASSWORD`, `LDAP_SEARCH_BASE`, `LDAP_ATTRIBUTE_FOR_USERNAME`, `LDAP_ATTRIBUTE_FOR_MAIL`, `LDAP_SEARCH_FILTER`.
 
 **Note**: Read on first startup only. Use Admin UI for changes unless `ENABLE_PERSISTENT_CONFIG=false`.
 
@@ -110,15 +99,9 @@ Header: `Cf-Access-Authenticated-User-Email`.
 
 ## SCIM 2.0 Provisioning
 
-| Variable | Description |
-|----------|-------------|
-| `SCIM_ENABLED` | `false` -- enable SCIM |
-| `SCIM_TOKEN` | Bearer token (`openssl rand -base64 32`) |
-| `SCIM_AUTH_PROVIDER` | OAuth provider name for externalId |
+Key vars: `SCIM_ENABLED=true`, `SCIM_TOKEN` (bearer token), `SCIM_AUTH_PROVIDER` (OAuth provider for externalId).
 
-Base URL: `<your-url>/api/v1/scim/v2/`
-
-Operations: CRUD for Users (`/Users`) and Groups (`/Groups`). Supports filter operators: `eq`, `ne`, `co`, `sw`, `ew`, `pr`, `gt`, `ge`, `lt`, `le`.
+Base URL: `{url}/api/v1/scim/v2/`. CRUD for `/Users` and `/Groups`. Filter operators: `eq`, `ne`, `co`, `sw`, `ew`, `pr`, `gt`, `ge`, `lt`, `le`.
 
 ---
 
@@ -154,30 +137,12 @@ Only creates on fresh install (empty DB).
 **Features**: API Keys, Notes, Channels, Folders, Web Search, Image Generation, Code Interpreter, Direct Tool Servers, Memories
 
 ### Groups
-Additive permissions. Visibility: Anyone (default), Members, No one.
-
-**Recommended**: Separate permission groups (`[Perms] Image Gen`) from sharing groups (`Team-Engineering`).
+Additive permissions. Visibility: Anyone (default), Members, No one. **Recommended**: Separate permission groups (`[Perms] Image Gen`) from sharing groups (`Team-Engineering`).
 
 ---
 
-## Banners
+## Banners, Webhooks, Analytics
 
-`WEBUI_BANNERS` -- JSON array. Properties: `id`, `type` (`info`/`success`/`warning`/`error`), `title`, `content` (HTML), `dismissible`, `timestamp`.
-
----
-
-## Webhooks
-
-1. **Admin webhook** (`WEBHOOK_URL`): fires on `new_user` events
-2. **User webhook** (`ENABLE_USER_WEBHOOKS`): fires `chat_response` when user not active
-3. **Channel webhooks**: POST to `{WEBUI_API_BASE_URL}/channels/webhooks/{id}/{token}` with `{"content": "..."}`
-
----
-
-## Analytics
-
-Admin Panel > Analytics. Disable: `ENABLE_ADMIN_ANALYTICS=False`.
-
-Tracks: messages, tokens, chats, users. Model usage table, user activity table. Elo-based leaderboard with arena evaluation.
-
-API: `GET /api/v1/analytics/{summary|models|users|messages|daily|tokens}` with `start_date`, `end_date`, `group_id` params.
+- **Banners**: `WEBUI_BANNERS` JSON array; properties: `id`, `type`, `title`, `content` (HTML), `dismissible`, `timestamp`
+- **Webhooks**: admin (`WEBHOOK_URL`/`new_user`), user (`ENABLE_USER_WEBHOOKS`/`chat_response`), channel (`POST .../channels/webhooks/{id}/{token}`)
+- **Analytics**: see [administration-analytics.md](administration-analytics.md)

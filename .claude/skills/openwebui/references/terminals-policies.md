@@ -100,43 +100,11 @@ curl -X DELETE http://localhost:3000/api/v1/policies/data-science \
 
 ## Connecting policies to Open WebUI
 
-### 1. Add a terminal connection
+In Admin Panel > Settings > Connections, add an Open Terminal connection with URL (orchestrator), API Key, and Policy ID.
 
-In the Open WebUI admin panel, go to **Settings > Connections** and add an Open Terminal connection:
-
-| Field | Value |
-| :--- | :--- |
-| **URL** | The orchestrator's URL (e.g., `http://terminals-orchestrator:3000`) |
-| **API Key** | The orchestrator's `TERMINALS_API_KEY` |
-| **Policy ID** | The policy name you created (e.g., `data-science`) |
-
-### 2. Restrict access with groups
-
-Each connection supports **access grants**:
-
+Restrict access per connection via `access_grants`:
 ```json
-[
-  {
-    "url": "http://orchestrator:3000",
-    "key": "sk-...",
-    "policy_id": "development",
-    "config": {
-      "access_grants": [
-        { "principal_type": "group", "principal_id": "engineering", "permission": "read" }
-      ]
-    }
-  },
-  {
-    "url": "http://orchestrator:3000",
-    "key": "sk-...",
-    "policy_id": "data-science",
-    "config": {
-      "access_grants": [
-        { "principal_type": "group", "principal_id": "data-team", "permission": "read" }
-      ]
-    }
-  }
-]
+{"url":"http://orchestrator:3000","key":"sk-...","policy_id":"data-science","config":{"access_grants":[{"principal_type":"group","principal_id":"data-team","permission":"read"}]}}
 ```
 
 ## Hard caps
@@ -166,32 +134,8 @@ A policy named `default` in the database merges with global settings (policy val
 
 ## API reference
 
-All endpoints prefixed with `/api/v1` on the orchestrator.
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/policies` | List all policies |
-| `POST` | `/policies` | Create a new policy (returns 409 if exists) |
-| `GET` | `/policies/{policy_id}` | Get a single policy |
-| `PUT` | `/policies/{policy_id}` | Create or update a policy |
-| `DELETE` | `/policies/{policy_id}` | Delete a policy |
-
-### Request body (PolicyData)
-
-```json
-{
-  "image": "ghcr.io/open-webui/open-terminal:latest",
-  "cpu_limit": "4",
-  "memory_limit": "16Gi",
-  "storage": "20Gi",
-  "storage_mode": "per-user",
-  "env": { "KEY": "value" },
-  "idle_timeout_minutes": 60
-}
-```
-
-All fields optional. Omitted fields inherit from orchestrator global defaults.
+Endpoints on `/api/v1` (orchestrator): `GET/POST /policies`, `GET/PUT/DELETE /policies/{policy_id}`. Use `PUT` to upsert. Body fields (all optional): `image`, `cpu_limit`, `memory_limit`, `storage`, `storage_mode`, `env` (object), `idle_timeout_minutes`.
 
 ## Example: multi-team setup
 
-Create three policies via PUT: `engineering` (2 CPU, 4Gi, 10Gi storage, 120min timeout), `data-science` (8 CPU, 32Gi, 50Gi storage, egress-filtered), `intern` (1 CPU, 1Gi, no storage, 15min timeout). Then create three connections in Open WebUI with different `policy_id` values and use access grants to restrict visibility per group.
+Create policies via PUT: `engineering` (2 CPU, 4Gi, 10Gi, 120min), `data-science` (8 CPU, 32Gi, 50Gi, egress-filtered), `intern` (1 CPU, 1Gi, no storage, 15min). Add connections in Open WebUI with different `policy_id` values and access grants per group.

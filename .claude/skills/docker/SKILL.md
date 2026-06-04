@@ -1,7 +1,7 @@
 ---
 name: docker
 version: 2026-02-01
-description: Docker layer optimization for fast builds. This skill should be used when writing Dockerfiles, optimizing build times, setting up multi-stage builds, configuring BuildKit cache mounts, debugging slow builds, writing docker-compose.yml files, or integrating Docker with CI/CD pipelines (GitHub Actions, GitLab CI). Covers layer ordering, dependency caching, .dockerignore, multi-stage patterns, BuildKit features, and Docker Compose patterns.
+description: Docker build optimization. Use for Dockerfiles, multi-stage builds, BuildKit cache mounts, .dockerignore, docker-compose.yml, CI/CD caching (GitHub Actions, GitLab CI), and language-specific patterns.
 ---
 
 # Docker Layer Optimization
@@ -97,10 +97,11 @@ Slow build? Check in order:
 
 ## References
 
-For detailed patterns by language and CI/CD integration:
-
-- `references/language-patterns.md` - Node.js, Python, Go, Rust specific patterns
+- `references/language-patterns.md` - Node.js, Python patterns with cache mounts
+- `references/language-patterns-compiled.md` - Go, Rust patterns + base image table
 - `references/cicd-integration.md` - GitHub Actions & GitLab CI caching setup
-- `references/buildkit-advanced.md` - Advanced BuildKit features (bake, secrets, SSH)
-- `references/compose-services.md` - Compose file structure, services, build, networking, volumes, health checks, commands
-- `references/compose-patterns.md` - Dev patterns, override files, profiles, watch mode, environment variable priority
+- `references/cicd-optimization.md` - Cache strategy comparison & optimization tips
+- `references/buildkit-advanced.md` - BuildKit mounts (cache/bind/secret/SSH), heredocs, debugging
+- `references/buildkit-bake.md` - Docker Bake multi-target builds (HCL)
+- `references/compose-services.md` - Compose structure, build, health checks, dependencies
+- `references/compose-networking.md` - Compose networking, volumes, common commands

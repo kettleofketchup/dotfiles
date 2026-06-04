@@ -35,23 +35,8 @@ Add interactive buttons beneath chat messages for one-click functionality.
 | Code Access | `self.valves.field` | `__user__["valves"].field` |
 
 ### Field Types
-```python
-from pydantic import BaseModel, Field
 
-class Tools:
-    class Valves(BaseModel):
-        api_key: str = Field(default="", description="API key",
-            json_schema_extra={"input": {"type": "password"}})
-        priority: str = Field(default="medium",
-            json_schema_extra={"input": {"type": "select",
-                "options": ["low", "medium", "high"]}})
-    class UserValves(BaseModel):
-        preference: str = Field(default="concise")
-    def __init__(self):
-        self.valves = self.Valves()
-```
-
-Supports: password, select (static/dynamic with `options` method), Literal for multi-choice.
+Use `json_schema_extra={"input": {"type": "password"}}` for secrets, `{"type": "select", "options": [...]}` for dropdowns, or `Literal["a","b"]` for multi-choice. Example: `api_key: str = Field(default="", json_schema_extra={"input": {"type": "password"}})`
 
 ## Reserved Arguments
 
@@ -99,12 +84,7 @@ await __event_emitter__({"type": "status", "data": {"description": "Done", "done
 
 **Critical**: Always emit `done: True` to stop shimmer animations.
 
-### External Tool Events
-```
-POST /api/v1/chats/{chat_id}/messages/{message_id}/event
-Authorization: Bearer YOUR_API_KEY
-```
-Requires `ENABLE_FORWARD_USER_INFO_HEADERS=True`.
+**External Tool Events**: `POST /api/v1/chats/{chat_id}/messages/{message_id}/event` with `Authorization: Bearer YOUR_API_KEY`. Requires `ENABLE_FORWARD_USER_INFO_HEADERS=True`.
 
 ---
 
@@ -155,28 +135,10 @@ Connect external OpenAPI-compatible servers as tool providers.
 
 ## Pipelines
 
-External processing layer running as separate container. Offloads compute-intensive tasks.
+External processing layer in a separate container that offloads compute-intensive tasks.
 
-### Architecture
-```
-User ↔ Open WebUI ↔ Pipelines Container ↔ External Services
-```
+Architecture: `User ↔ Open WebUI ↔ Pipelines Container ↔ External Services`
 
-### Types
-- **Pipe Pipelines**: Custom model endpoints
-- **Filter Pipelines**: Inlet/outlet message processing
-- **Pipeline Valves**: Runtime-configurable settings
+Types: Pipe Pipelines (custom model endpoints), Filter Pipelines (inlet/outlet processing), Pipeline Valves (runtime settings).
 
-### Docker Compose
-```yaml
-services:
-  pipelines:
-    image: ghcr.io/open-webui/pipelines:main
-    ports: ["9099:9099"]
-    volumes:
-      - pipelines:/app/pipelines
-  open-webui:
-    environment:
-      - OPENAI_API_BASE_URLS=http://pipelines:9099;https://api.openai.com/v1
-      - OPENAI_API_KEYS=0p3n-w3bu!;sk-xxx
-```
+Deploy: `ghcr.io/open-webui/pipelines:main` on port 9099. Configure `OPENAI_API_BASE_URLS=http://pipelines:9099;...` and `OPENAI_API_KEYS=0p3n-w3bu!;...` in Open WebUI.

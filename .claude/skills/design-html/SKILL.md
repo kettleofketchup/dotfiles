@@ -1,0 +1,1 @@
+/home/kettle/dotfiles/.claude/skills/gstack/design-html/SKILL.md
