@@ -1,58 +1,55 @@
-# Zinit Offline Package
+# Offline Bundle
 
-Snapshot of `~/.local/share/zinit/` for offline or airgapped deployments.
-Contains all zinit plugins, binaries, completions, and snippets so a new
-machine can bootstrap without internet access.
+Snapshot of `~/.local/share/zinit/` plus the dotfiles repo, for offline or
+airgapped deployments. A new machine can bootstrap shell + plugins + binaries
+without internet access.
 
-## Pack (export current zinit state)
-
-```bash
-zinit-pack.sh
-```
-
-1. Compresses `~/.local/share/zinit/` with zstd (gzip fallback)
-2. Bundles the archive + this README into `zinit-offline.tar.gz` at the repo root
-
-Run this on a machine with a working zinit setup after all plugins have loaded
-at least once.
-
-## Depack (restore on a new machine)
+## Pack (online machine)
 
 ```bash
-zinit-depack.sh
+just pack-offline
 ```
 
-Extracts `zinit-offline.tar.gz` (if needed), then restores the zinit archive to
-`~/.local/share/zinit/`. Prompts before overwriting an existing installation.
+This produces two files:
 
-## Typical workflow
+| File                                         | What it is                                     |
+|----------------------------------------------|------------------------------------------------|
+| `zinit-offline/zinit-offline.tar.gz`         | All zinit plugins, gh-r binaries, completions |
+| `dotfiles.tar`                               | Whole repo (includes the zinit archive above) |
+
+Transfer **`dotfiles.tar`** to the target machine — it has everything.
+
+## Restore (airgapped machine)
 
 ```bash
-# Source machine — snapshot everything
-zinit-pack.sh
-
-# Transfer the single file to the target
-scp ~/dotfiles/zinit-offline.tar.gz target:~/dotfiles/
-
-# Target machine — restore and stow
-cd ~/dotfiles
-zinit-depack.sh
-stow -R .
+tar xf dotfiles.tar -C ~                       # extract to ~/dotfiles
+~/dotfiles/zinit-offline/install-dotfiles.sh   # depack zinit + stow
 ```
 
-## What's included
+The installer:
+1. Verifies the tree is at `~/dotfiles` and `stow` is installed
+2. Runs `bin/zinit-depack.sh` (restores `~/.local/share/zinit/`)
+3. Backs up any conflicting dotfiles to `~/.dotfiles-backup-<timestamp>/`
+4. Runs `stow -R .`
 
-| Directory      | Contents                                           |
-|--------------- |----------------------------------------------------|
-| `zinit.git/`   | Zinit plugin manager source                        |
-| `plugins/`     | All plugins and gh-r binaries (bat, fd, fzf, etc.) |
+Open a new shell after restore.
+
+## What's inside `zinit-offline.tar.gz`
+
+| Directory      | Contents                                            |
+|----------------|-----------------------------------------------------|
+| `zinit.git/`   | Zinit plugin manager source                         |
+| `plugins/`     | All plugins and gh-r binaries (bat, fd, fzf, etc.)  |
 | `completions/` | Symlinks to generated/bundled completion files      |
-| `snippets/`    | OMZ snippets (docker, ssh, git, etc.)              |
-| `polaris/`     | `$ZPFX` — sbin symlinks and built artifacts        |
-| `services/`    | Zinit services (if any)                            |
+| `snippets/`    | OMZ snippets (docker, ssh, git, etc.)               |
+| `polaris/`     | `$ZPFX` — sbin symlinks and built artifacts         |
+| `services/`    | Zinit services (if any)                             |
 
 ## Notes
 
 - Archive size depends on installed gh-r binaries (~1 GB typical).
-- Re-run `zinit-pack.sh` after adding or updating plugins to refresh the snapshot.
-- The archive is platform-specific (linux/amd64). Pack on the same arch you deploy to.
+- The bundle is platform-specific (linux/amd64 by default). Pack and restore
+  on matching architecture.
+- Re-run `just pack-offline` after adding or updating plugins.
+- The depack script rewrites absolute symlinks if `$HOME` changes between
+  pack and restore machines (e.g., `kettle` → `mark`).

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Package the zinit share directory for offline/airgapped deployment.
-# Produces a single zinit-offline.tar.gz at the repo root.
+# Produces zinit-offline/zinit-offline.tar.gz inside the dotfiles repo.
 set -euo pipefail
 
 ZINIT_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/zinit"
 DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 OFFLINE_DIR="$DOTFILES_DIR/zinit-offline"
-BUNDLE="$DOTFILES_DIR/zinit-offline.tar.gz"
+BUNDLE="$OFFLINE_DIR/zinit-offline.tar.gz"
 
 if [[ ! -d "$ZINIT_HOME" ]]; then
     echo "Error: $ZINIT_HOME does not exist. Nothing to pack."
@@ -38,7 +38,7 @@ else
       2> >(
         count=0
         while IFS= read -r _; do
-            ((count++))
+            count=$((count + 1))
             if ((count % 50 == 0 || count == total_files)); then
                 pct=$((count * 100 / total_files))
                 bar=$(printf '#%.0s' $(seq 1 $((pct / 2))))
@@ -50,5 +50,4 @@ else
       | gzip > "$BUNDLE"
 fi
 
-echo "Done: zinit-offline.tar.gz ($(du -sh "$BUNDLE" | cut -f1))"
-echo "Copy this file to the target machine's dotfiles root."
+echo "Done: $BUNDLE ($(du -sh "$BUNDLE" | cut -f1))"

@@ -4,11 +4,11 @@ set -euo pipefail
 
 ZINIT_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/zinit"
 DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BUNDLE="$DOTFILES_DIR/zinit-offline.tar.gz"
+BUNDLE="$DOTFILES_DIR/zinit-offline/zinit-offline.tar.gz"
 
 if [[ ! -f "$BUNDLE" ]]; then
     echo "Error: $BUNDLE not found."
-    echo "Run zinit-pack.sh first or copy zinit-offline.tar.gz to the dotfiles root."
+    echo "Run bin/zinit-pack.sh first, or copy zinit-offline.tar.gz into zinit-offline/."
     exit 1
 fi
 

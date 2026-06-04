@@ -127,6 +127,15 @@ zinit wait lucid for \
     sbin \
   @eradman/entr
 
+# pv (pipe viewer) -- main branch ships only README; build from release tarball
+zinit wait lucid for \
+    as'null' \
+    id-as'pv' \
+    nocompile \
+    atclone'curl -sL https://github.com/a-j-wood/pv/releases/download/v1.7.24/pv-1.7.24.tar.gz | tar xz --strip-components=1 && ./configure --prefix=$ZPFX --disable-nls && make -j && make install' \
+    atpull'%atclone' \
+  @zdharma-continuum/null
+
 zi wait lucid for \
     from'gh-r' \
     sbin'* -> jq' \
@@ -143,6 +152,21 @@ zi wait lucid for \
     from'gh-r' \
     sbin'just' \
   @casey/just
+
+# logcli (Loki CLI) -- zip ships binary as logcli-linux-amd64; kingpin completion
+zi wait lucid for \
+    from'gh-r' \
+    bpick'logcli-linux-amd64.zip' \
+    sbin'logcli-* -> logcli' \
+    atclone'chmod +x logcli-* && ./logcli-* --completion-script-zsh > _logcli' atpull'%atclone' as'completion' \
+  @grafana/loki
+
+# grafanactl installed as `gcx` -- cobra completion renamed to match the alias
+zi wait lucid for \
+    from'gh-r' \
+    sbin'**/grafanactl -> gcx' \
+    atclone'./**/grafanactl completion zsh | sed "s/grafanactl/gcx/g" > _gcx' atpull'%atclone' as'completion' \
+  @grafana/grafanactl
 
 zi wait lucid for \
     from'gh-r' \
