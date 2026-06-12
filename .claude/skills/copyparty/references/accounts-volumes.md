@@ -25,9 +25,29 @@
 | `.` | dots | User can see dotfiles in directory listings |
 | `g` | get | Download files only, cannot browse or zip/tar |
 | `G` | upget | Same as `g` but uploaders see their own filekeys |
-| `h` | html | Same as `g` but folders serve index.html, no filekey needed for index.html |
+| `h` | html | Same as `g` but folders serve index.html, no filekey needed. Only applies to users **without** `r` — see static-site note below |
 | `a` | admin | See upload time, uploader IPs, config-reload |
 | `A` | all | Shortcut for `rwmda.` |
+
+### Static-site serving (`h`) and the read-permission gotcha
+
+`h` serves a folder's `index.html` for bare folder URLs (webserver-style)
+*only to users who lack `r`*. Anyone with read (`r`, `A`, admin) still gets the
+directory **listing** — browse always wins. For a pure static site where even
+the logged-in operator sees the rendered page, grant **only `h`**, no `r`:
+
+```yaml
+[/site]
+  /srv/data/site
+  accs:
+    h: *      # everyone (incl. admins) → index.html, nobody browses
+    rw: ci    # optional upload account to push content (never browses)
+```
+
+Keeping `rwmda: admin` means admins see the listing and only anonymous visitors
+get the page (preview logged-out). Manage files via SSH, since pure-`h` has no
+browse UI. Mounting `[/site]` over a subfolder of `[/]` shadows it — `[/]`'s `r`
+does not re-expose the listing at `/site/`.
 
 ### Permission Combinations
 

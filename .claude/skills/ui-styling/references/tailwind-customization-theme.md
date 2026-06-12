@@ -2,6 +2,12 @@
 
 `@theme` directive, colors, typography, and spacing extensions.
 
+> **For deeper Tailwind v4 theming, use the `tailwind` skill.** It covers
+> light/dark and dark-only patterns, `@theme inline` mechanics, and a workflow
+> for syncing base theme colors with a project's `/brand` skill. Use this
+> reference for shadcn/React-oriented customization; reach for `tailwind` when
+> theming is the main task or the project isn't shadcn/React.
+
 ## @theme Directive
 
 Modern CSS-based approach to customization:

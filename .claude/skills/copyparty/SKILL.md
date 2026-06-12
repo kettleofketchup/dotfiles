@@ -97,9 +97,38 @@ Config files use `-c copyparty.conf` or env `PRTY_CONFIG=copyparty.conf`. Format
 | `.` | Dots: see dotfiles in listings |
 | `g` | Get: download only, no browse |
 | `G` | Upget: upload + see own filekeys |
-| `h` | HTML: like `g` but serves index.html |
+| `h` | HTML: like `g` but serves index.html (only for users **without** `r` — see below) |
 | `a` | Admin: see IPs, upload times, reload |
 | `A` | All: same as `rwmda.` |
+
+### Serving a folder as a static site (index.html)
+
+`h` makes a folder behave like a plain webserver: a bare folder URL (`/help/`)
+serves `index.html` instead of copyparty's directory-listing UI.
+
+**Gotcha — `h` only applies to users that lack `r`.** A user who has read
+(`r`, and therefore `rwmda` / `A` / admin) always gets the *file listing*, never
+the rendered page, because browsing wins. `h` is defined as "like `g`" (get-only,
+no browse). So for a **true** static site where *everyone* — including the
+logged-in operator — sees the rendered page, grant **only `h`** and give **no one
+`r`** on that volume:
+
+```yaml
+[/site]
+  /srv/data/site
+  accs:
+    h: *          # everyone (incl. admins) gets index.html, nobody browses
+    rw: ci        # an upload account can still push content (it never browses)
+```
+
+If instead you keep `rwmda: admin`, admins will see the file listing and only
+anonymous visitors get the rendered page — preview it in a logged-out/incognito
+window. Manage the underlying files via SSH (or a non-shadowed volume), since a
+pure-`h` volume has no browse UI.
+
+Mounting `[/site]` on a subfolder of an existing `[/]` volume *shadows* it: the
+URL resolves to the most-specific volume, so `[/]`'s `r` does not leak the
+listing back in at `/site/`.
 
 ## Default Port Map
 
