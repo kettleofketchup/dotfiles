@@ -11,23 +11,19 @@ When creating or modifying React components, apply these skills:
 - **react** - React 19 patterns, hooks, Server Components, Suspense, async components
 - **ui-styling** - shadcn/ui components, Tailwind, theming, forms
 
-## Component-First Principle
+## Using shadcn/ui
 
-**Never use shadcn/ui primitives directly in pages or features.**
-
-Instead:
-1. Create custom wrapper components in `components/custom/`
-2. Import and use the custom component everywhere
+Use shadcn/ui primitives **directly** in pages and features — that is the default.
+Prefer built-in variants/sizes over custom styling.
 
 ```tsx
-// WRONG - primitive used directly
 import { Button } from "@/components/ui/button"
-<Button variant="default" className="bg-brand">Save</Button>
-
-// CORRECT - custom wrapper
-import { AppButton } from "@/components/custom/app-button"
-<AppButton isLoading={isPending}>Save</AppButton>
+<Button variant="destructive" onClick={onDelete}>Delete</Button>
 ```
+
+Only extract a wrapper in `components/custom/` when multiple call sites share the
+same non-trivial behavior (e.g. a button that always renders a loading spinner).
+Don't wrap by default.
 
 ## React 19 Patterns
 
