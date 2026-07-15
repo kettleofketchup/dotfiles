@@ -1,3 +1,30 @@
+# Claude Code Hooks
+
+## `preexisting-nudge.py` — Stop hook
+
+Pushes back when a turn dismisses something as *"pre-existing"* (a failing test,
+a lint error, formatting drift, a bug) as if that were a reason to leave it. On
+a match in Claude's final message it returns `{"decision":"block","reason":...}`
+so Claude keeps working and fixes it (or explicitly gets sign-off to leave it).
+Has a `stop_hook_active` loop guard.
+
+Registered as a `Stop` hook in `~/.claude/settings.json` (hooks *override*
+rather than merge across settings files, so it must live alongside the other
+hooks there, not in a separate `settings.local.json`):
+
+```json
+"Stop": [
+  {
+    "matcher": "",
+    "hooks": [
+      { "type": "command", "command": "/home/kettle/dotfiles/.claude/hooks/preexisting-nudge.py", "timeout": 10 }
+    ]
+  }
+]
+```
+
+---
+
 # Claude Code Bash Hooks
 
 Modular command checker that validates Bash commands before execution in Claude Code.
