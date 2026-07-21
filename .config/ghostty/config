@@ -1,5 +1,5 @@
 # Dynamic theme colors
-config-file = ?"~/.config/omarchy/current/theme/ghostty.conf"
+config-file = "~/.config/omarchy/current/theme/ghostty.conf"
 
 # Font
 font-family = "FiraCode Nerd Font Mono"
@@ -16,6 +16,28 @@ gtk-toolbar-style = flat
 
 # Cursor styling
 cursor-style = "block"
+keybind = cmd+v=paste_from_clipboard
+keybind = cmd+v=copy_to_clipboard
+
+# Reload by pressing:
+# ctrl+shift+, (Linux)
+# cmd+shift+, (macOS)
+#font-family = FiraCode
+# font-family = MonoLisa
+# font-family = Comic Code Ligatures
+# font-family = AppleColorEmoji
+window-decoration = auto
+# window-width = 70
+# window-height = 16
+mouse-hide-while-typing = true
+theme = void
+adjust-cell-height = 35%
+# confirm-close-surface = always
+# adjust-cell-width = 5%
+bold-is-bright = true
+adjust-cursor-height = 35%
+font-thicken = false
+cursor-style = block
 cursor-style-blink = false
 
 # Cursor styling + SSH session terminfo
@@ -32,6 +54,10 @@ keybind = super+control+shift+alt+arrow_right=resize_split:right,100
 
 # Slowdown mouse scrolling
 mouse-scroll-multiplier = 0.95
+## Clipboard
+clipboard-write = allow
+clipboard-read = allow
+clipboard-paste-protection = false
 
 # Fix general slowness on hyprland (https://github.com/ghostty-org/ghostty/discussions/3224)
 async-backend = epoll
