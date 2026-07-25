@@ -24,9 +24,17 @@ string** it emits, never to re-derive the rule. The strings, verbatim from
 A span carrying any of these reasons is not a candidate for Class A/B/C at all — do not judge
 it, just count it in the report.
 
-Two whole-file skip reasons exist alongside these but never reach comment-level judgment
-either: `markdown-out-of-scope` (`.md`/`.markdown`/`.mdx`) and `multi-language-unsupported`
-(`.vue`/`.svelte`/`.astro`, where per-block token selection is not implemented).
+Six whole-file skip reasons exist alongside these but never reach comment-level judgment
+either — enumerated in full, since this table's whole value is being exhaustive:
+
+| Reason string | Fires when |
+|---|---|
+| `markdown-out-of-scope` | suffix is `.md`, `.markdown`, or `.mdx` |
+| `multi-language-unsupported` | suffix is `.vue`, `.svelte`, or `.astro` — per-block token selection is not implemented |
+| `unreadable` | the file cannot be read (`OSError` on open) |
+| `too-large` | file exceeds the 1 MB size ceiling |
+| `binary` | a NUL byte appears in the first 8 KiB |
+| `unknown-language` | the extension is not in the language table and no recognized shebang is present |
 
 **Preserved byte-for-byte, including whitespace.** golangci-lint honours `//nolint:` only with
 no space after the slashes — a Class C spacing tidy on a `directive` span would silently
