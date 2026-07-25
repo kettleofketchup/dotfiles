@@ -77,10 +77,16 @@ SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/comment-reviewer/scripts"
 
 ## Caps
 
-At most **60 files** and **150 edits** per run. On overflow: stop editing, write the receipt
-with `--partial`, and list the unprocessed files in the report so a repeat dispatch resumes
-rather than re-hitting the same wall. Never silently truncate — a partial sweep that looks
-complete is worse than an explicit one.
+At most **60 files** and **150 edits** per run. On overflow, stop *editing* further files — but
+the edits already made before the cap tripped are not exempt from the ordinary pipeline. Run
+step 7 (verify) and step 8 (commit) on them, in that order, exactly as if the cap had never been
+hit, **before** writing anything. If that commit fails, or HEAD does not move, the same rule from
+step 9 applies: **abort and write no receipt** — a partial receipt written before the commit
+succeeds would certify review credit for edits the tree never actually received. Only once that
+commit has succeeded does the partial receipt get written, with `--partial`, listing the
+unprocessed files in the report so a repeat dispatch resumes rather than re-hitting the same
+wall. Never silently truncate — a partial sweep that looks complete is worse than an explicit
+one.
 
 ## No-edit runs
 
