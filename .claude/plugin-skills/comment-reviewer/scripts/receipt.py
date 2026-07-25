@@ -47,9 +47,20 @@ def write(cwd, payload, now=None):
     # Write-then-rename: a half-written receipt read by a concurrent gate would
     # parse as absent, denying a PR that was in fact reviewed.
     handle, temp = tempfile.mkstemp(dir=str(root))
-    with os.fdopen(handle, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, indent=2, sort_keys=True)
-    os.replace(temp, target)
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2, sort_keys=True)
+        os.replace(temp, target)
+    except Exception:
+        # A failed dump-and-replace must not leave an orphan in the receipt
+        # directory: prune() treats every file here as a receipt, so a leaked
+        # temp file would consume a KEEP_NEWEST slot and could evict a
+        # legitimate one -- blocking a user from opening a PR they did review.
+        try:
+            os.unlink(temp)
+        except OSError:
+            pass
+        raise
     prune(root, now=now)
     return target
 
@@ -109,7 +120,17 @@ def main(argv=None):
     writer.add_argument("--partial", action="store_true")
     args = parser.parse_args(argv)
 
-    body = {} if sys.stdin.isatty() else (json.load(sys.stdin) or {})
+    body = {}
+    if not sys.stdin.isatty():
+        try:
+            body = json.load(sys.stdin) or {}
+        except (ValueError, OSError) as exc:
+            # A malformed or empty report body must degrade to a zero-count
+            # receipt, not crash: this file is vendored into hooks/scripts/,
+            # where an uncaught traceback breaks the turn.
+            print(f"receipt.py: stdin was not valid JSON ({exc}); using empty body",
+                  file=sys.stderr)
+            body = {}
     payload = build(
         commit_sha=gitpaths.head_commit(args.cwd),
         tree_sha=gitpaths.head_tree(args.cwd),
