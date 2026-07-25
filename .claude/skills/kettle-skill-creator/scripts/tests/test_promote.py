@@ -112,3 +112,51 @@ def test_skill_only_plugin_gains_no_empty_dirs(tmp_path):
     root = repo / "plugins" / "plain-skill"
     for name in ("agents", "hooks", "commands", "tests", ".claude-plugin"):
         assert not (root / name).exists()
+
+
+def test_pycache_excluded_from_mirrored_tests_dir(tmp_path):
+    """tests/ is now a mirrored dir. Stray bytecode promoted today would be
+    committed by Task 13's `git add plugins/` and then rmtree'd on the very next
+    promotion -- permanent add/delete churn for every plugin in the catalog."""
+    source_root, repo = build_source(tmp_path), build_repo(tmp_path)
+    pycache = source_root / "demo-plugin" / "tests" / "__pycache__"
+    pycache.mkdir()
+    (pycache / "test_x.cpython-312.pyc").write_bytes(b"\x00\x01")
+    (source_root / "demo-plugin" / "tests" / "test_x.py").with_suffix(".pyc").write_bytes(b"\x00")
+    assert promote(repo, source_root).returncode == 0
+    root = repo / "plugins" / "demo-plugin"
+    assert (root / "tests" / "test_x.py").is_file()
+    assert not (root / "tests" / "__pycache__").exists()
+    assert not (root / "tests" / "test_x.pyc").exists()
+
+
+def test_dry_run_reports_plugin_root_dirs_and_writes_nothing(tmp_path):
+    """A dry run against a brand-new plugin must describe the plugin-root dirs
+    it WOULD copy while writing nothing at all to disk."""
+    source_root, repo = build_source(tmp_path), build_repo(tmp_path)
+    result = promote(repo, source_root, extra=("--dry-run",))
+    assert result.returncode == 0
+    for name in ("agents", "hooks", "commands", "tests", ".claude-plugin"):
+        assert name in result.stdout
+    assert not (repo / "plugins" / "demo-plugin").exists()
+
+
+def test_promotion_is_idempotent(tmp_path):
+    """Re-running promote with no source changes must produce a byte-identical
+    tree. Verified by committing after the first promotion and asserting a
+    second promotion leaves `git status --short` empty."""
+    source_root, repo = build_source(tmp_path), build_repo(tmp_path)
+    assert promote(repo, source_root).returncode == 0
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "add", "-A"],
+        cwd=repo, check=True,
+    )
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "snapshot"],
+        cwd=repo, check=True,
+    )
+    assert promote(repo, source_root).returncode == 0
+    status = subprocess.run(
+        ["git", "status", "--short"], cwd=repo, capture_output=True, text=True, check=True,
+    )
+    assert status.stdout == ""
