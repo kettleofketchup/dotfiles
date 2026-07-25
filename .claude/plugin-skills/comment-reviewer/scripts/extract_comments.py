@@ -59,6 +59,30 @@ _DOCSTRING_OWNER = re.compile(r"^(async\s+def|def|class)\b")
 # Matches `<<EOF`, `<<-EOF`, `<<'EOF'`, `<<"EOF"`.
 _HEREDOC_START = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 
+# `$(( ... ))` arithmetic expansion contains `<<` (shift) that reads exactly
+# like a heredoc opener to a scanner that only looks at the token in
+# isolation -- `mask=$((1 << SHIFT))` would otherwise make `_HEREDOC_START`
+# match with delimiter `SHIFT` and swallow every line up to the next one that
+# happens to read `SHIFT`, silently eating real comments in between and
+# reporting "skipped": null as if the file were fully scanned. Same guard as
+# `prmatch._heredoc_start`, ported here since this module cannot import that
+# one (see the note on `_HEREDOC_START` above).
+_ARITH_SPAN = re.compile(r"\$\(\(.*?\)\)")
+
+
+def _in_arith_span(text, index):
+    """True when `index` (the start of a `<<` match) falls inside a
+    `$(( ... ))` arithmetic span on its own line."""
+    line_start = text.rfind("\n", 0, index) + 1
+    line_end = text.find("\n", index)
+    if line_end == -1:
+        line_end = len(text)
+    line = text[line_start:line_end]
+    offset = index - line_start
+    return any(
+        span.start() <= offset < span.end() for span in _ARITH_SPAN.finditer(line)
+    )
+
 
 def _skip_heredoc(text, index, match):
     """Index just past a heredoc body opened by `match` at `index`.
@@ -108,13 +132,21 @@ _TOML_STRINGS = (
 _KOTLIN_STRINGS = (('"""', '"""', False, True),) + _C_STRINGS
 _JAVA_STRINGS = (('"""', '"""', True, True),) + _C_STRINGS
 
+_JS_FAMILY_STRINGS = _C_STRINGS + (("`", "`", True, True),)
+
 LANGS = {
     "go": Lang(("//",), (("/*", "*/", False),), _C_STRINGS + (("`", "`", False, True),)),
     # Rust is the one language here that nests block comments by specification.
     "rust": Lang(("//",), (("/*", "*/", True),), _C_STRINGS),
-    "typescript": Lang(
-        ("//",), (("/*", "*/", False),), _C_STRINGS + (("`", "`", True, True),)
-    ),
+    "typescript": Lang(("//",), (("/*", "*/", False),), _JS_FAMILY_STRINGS),
+    # Same lexical rules as TypeScript -- kept as a distinct key (rather than
+    # aliasing .js/.jsx onto "typescript") so `extract()`'s reported `lang`
+    # is honest. The JSDoc `@param` carve-out in comment-classes.md depends on
+    # that label: it tells the agent JSDoc blocks are off-limits in .js/.jsx
+    # because there they are the only type information available, but
+    # condensable in a typed language. A `.js` file reported as "typescript"
+    # made every signal say "typed language, condensable" instead.
+    "javascript": Lang(("//",), (("/*", "*/", False),), _JS_FAMILY_STRINGS),
     "c": Lang(("//",), (("/*", "*/", False),), _C_STRINGS),
     # Kotlin block comments nest by specification, like Rust's.
     "kotlin": Lang(("//",), (("/*", "*/", True),), _KOTLIN_STRINGS),
@@ -136,7 +168,7 @@ LANGS = {
 
 EXTENSIONS = {
     ".go": "go", ".rs": "rust",
-    ".ts": "typescript", ".tsx": "typescript", ".js": "typescript", ".jsx": "typescript",
+    ".ts": "typescript", ".tsx": "typescript", ".js": "javascript", ".jsx": "javascript",
     ".c": "c", ".h": "c", ".cc": "c", ".cpp": "c", ".hpp": "c",
     ".java": "java", ".kt": "kotlin",
     ".py": "python", ".pyi": "python",
@@ -357,7 +389,7 @@ def scan(text, lang):
 
         if lang.heredocs and text.startswith("<<", index):
             heredoc_match = _HEREDOC_START.match(text, index)
-            if heredoc_match:
+            if heredoc_match and not _in_arith_span(text, index):
                 new_index = _skip_heredoc(text, index, heredoc_match)
                 line += text.count("\n", index, new_index)
                 index = new_index

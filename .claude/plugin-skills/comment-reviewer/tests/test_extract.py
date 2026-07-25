@@ -274,6 +274,50 @@ def test_shell_heredoc_with_dash_and_quoted_delimiter(tmp_path):
     assert not any("inside heredoc too" in t for t in found)
 
 
+def test_shell_arithmetic_left_shift_is_not_a_heredoc_opener(tmp_path):
+    """C1: `$((1 << SHIFT))` contains a `<<` that reads exactly like a heredoc
+    opener to a scanner that only looks at the token in isolation. Mirrors
+    test_match.py's `# F8` arithmetic case: without the `_ARITH_SPAN` guard,
+    `SHIFT` is read as the heredoc delimiter and everything up to the next
+    line that happens to read exactly `SHIFT` -- including a real comment --
+    is swallowed as the heredoc body, while `extract()` still reports
+    `"skipped": None` as if the file were fully, cleanly scanned."""
+    doc = tmp_path / "arith.sh"
+    doc.write_text(
+        "mask=$((1 << SHIFT))\n"
+        "# a real comment that must not vanish\n"
+    )
+    record = ec.extract(doc)
+    assert record["skipped"] is None
+    found = [c["text"] for c in record["comments"]]
+    assert any("a real comment that must not vanish" in t for t in found)
+
+
+def test_js_extension_reports_javascript_not_typescript(tmp_path):
+    """I5: `.js`/`.jsx` used to map onto the `typescript` Lang entry, so
+    `extract()` reported `lang: "typescript"` for a plain JS file. That erases
+    the JSDoc `@param` carve-out in comment-classes.md, which is keyed off
+    the file being untyped: every downstream signal read "typed language,
+    condensable" for a codebase whose JSDoc tags are its only type info."""
+    doc = tmp_path / "a.js"
+    doc.write_text("// hi\n")
+    assert ec.extract(doc)["lang"] == "javascript"
+
+    jsx = tmp_path / "a.jsx"
+    jsx.write_text("// hi\n")
+    assert ec.extract(jsx)["lang"] == "javascript"
+
+
+def test_jsdoc_negative_fixture_reports_javascript_and_keeps_the_param_block(tmp_path):
+    """The spec's verification table names tests/samples/negative/jsdoc.js
+    explicitly: a JSDoc @param block in a .js file must be reported under the
+    honest `javascript` label, not `typescript`, so the agent's never-touch
+    carve-out for JSDoc in untyped files actually applies."""
+    record = ec.extract(paths.NEGATIVE_SAMPLES / "jsdoc.js")
+    assert record["lang"] == "javascript"
+    assert any("@param" in c["text"] for c in record["comments"])
+
+
 def test_python_triple_quoted_string_inside_function_body_is_not_a_docstring(tmp_path):
     """Regression guard: a triple-quoted literal that is not the first
     statement of a function -- here it follows an assignment -- is data, not
