@@ -26,6 +26,18 @@ import prmatch
     # A skip on a DIFFERENT segment must not release this one.
     "CLAUDE_SKIP_COMMENT_REVIEW=1 ls; gh pr create",
     "gh pr create && CLAUDE_SKIP_COMMENT_REVIEW=1 echo x",
+    # --- Fix-round regressions (coordinator review) ---
+    "git push\ngh pr create --fill",           # F1: newline-separated segments
+    "url=$(gh pr create --fill)",              # F2: command substitution
+    "`gh pr create`",                          # F2: backtick substitution
+    "gh pr create --title --help",             # F3: --help as an option VALUE
+    "/usr/bin/gh pr create",                   # F4: path-qualified CLI
+    "sudo gh pr create",                       # F5: sudo wrapper
+    "nohup gh pr create --fill",               # F5: nohup wrapper
+    "time gh pr create",                       # F5: time wrapper
+    "command gh pr create",                    # F5: command wrapper
+    "gh pr \\\ncreate",                        # F7: backslash-newline line continuation
+    "x=$((1 << SHIFT))\ngh pr create\nSHIFT",  # F8: arithmetic `<<` must not read as a heredoc
 ])
 def test_matches_real_invocations(command):
     assert prmatch.matches(command)
@@ -86,3 +98,58 @@ def test_quoted_metacharacters_do_not_hide_the_invocation():
                     'gh pr create --body "one\ntwo"'):
         assert prmatch.segments(command), command
         assert prmatch.matches(command), command
+
+
+# --- Fix-round regressions (coordinator review) ---
+#
+# The brief's own reference implementation had real false-negative gaps.
+# Every one of these mirrors a command shape that used to sail through the
+# gate unrecognised.
+
+
+def test_newline_between_commands_splits_segments():
+    """F1: `shlex` classifies '\\n' as whitespace and never yields it as a
+    token, so having '\\n' in an operator set that is only ever checked
+    against *tokens* is dead code -- the splitter must recognise the newline
+    boundary itself. `git push\\ngh pr create --fill` must become two
+    segments, and the second one must still be recognised."""
+    result = prmatch.segments("git push\ngh pr create --fill")
+    assert result == [["git", "push"], ["gh", "pr", "create", "--fill"]]
+
+
+def test_help_disqualification_is_position_sensitive():
+    """F3: `--help` only disqualifies when it is the flag actually being
+    passed. When it is the *value* of a preceding option, scanning the whole
+    token list for the literal string `--help` is a trivial bypass."""
+    assert prmatch.matches("gh pr create --title --help")
+    assert not prmatch.matches("gh pr create --help")  # unchanged: real --help
+
+
+def test_env_prefixed_skip_is_honored():
+    """F6: `_has_skip` used to bail out on the first non-assignment token, so
+    a leading `env` (which `is_pr_create` already strips) hid the skip
+    assignment sitting right behind it -- the gate fired despite an explicit,
+    well-formed skip."""
+    assert not prmatch.matches("env CLAUDE_SKIP_COMMENT_REVIEW=1 gh pr create")
+    assert prmatch.wants_skip("env CLAUDE_SKIP_COMMENT_REVIEW=1 gh pr create")
+
+
+@pytest.mark.parametrize("command", [
+    "git push\ngh pr create --fill",           # F1
+    "url=$(gh pr create --fill)",              # F2
+    "`gh pr create`",                          # F2
+    "gh pr create --title --help",             # F3
+    "/usr/bin/gh pr create",                   # F4
+    "sudo gh pr create",                       # F5
+    "nohup gh pr create --fill",               # F5
+    "time gh pr create",                       # F5
+    "command gh pr create",                    # F5
+    "gh pr \\\ncreate",                        # F7
+    "x=$((1 << SHIFT))\ngh pr create\nSHIFT",  # F8
+])
+def test_fix_round_findings_match(command):
+    """One assertion per numbered finding from the coordinator's review,
+    kept as a separate table (in addition to their entries in
+    `test_matches_real_invocations`) so a future regression in any single
+    one of them fails under a name that names the finding."""
+    assert prmatch.matches(command)
