@@ -499,7 +499,8 @@
     "just-interceptor@claude-just-interceptor": true,
     "hookify@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true,
-    "charm-tui@kettleofskills": true
+    "charm-tui@kettleofskills": true,
+    "comment-reviewer@kettleofskills": true
   },
   "extraKnownMarketplaces": {
     "claude-just-interceptor": {
