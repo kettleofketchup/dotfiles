@@ -293,6 +293,65 @@ def test_shell_arithmetic_left_shift_is_not_a_heredoc_opener(tmp_path):
     assert any("a real comment that must not vanish" in t for t in found)
 
 
+def test_shell_multiline_arithmetic_shift_across_lines_is_not_a_heredoc_opener(tmp_path):
+    """C1 re-review (Critical, round 2): the first fix's `_ARITH_SPAN` check
+    was scoped to a single line, but `_HEREDOC_START`'s own `\\s*` matches a
+    newline -- `$((` opened on one line, `<<` and its operand on the next,
+    is normal bash formatting and the single-line check never sees the
+    closing `))` at all, reproducing the original swallow-to-EOF bug."""
+    doc = tmp_path / "arith_multiline.sh"
+    doc.write_text(
+        "mask=$((1 <<\n"
+        "  SHIFT))\n"
+        "# real comment after\n"
+    )
+    record = ec.extract(doc)
+    assert record["skipped"] is None
+    found = [c["text"] for c in record["comments"]]
+    assert any("real comment after" in t for t in found)
+
+
+def test_shell_multiline_arithmetic_block_is_not_a_heredoc_opener(tmp_path):
+    """Second multi-line shape from the same finding: the whole `$((...))`
+    expression on its own lines, with `<<` in the middle."""
+    doc = tmp_path / "arith_block.sh"
+    doc.write_text(
+        "result=$((\n"
+        "    value << SHIFT_AMOUNT\n"
+        "))\n"
+        "# a note about the result\n"
+    )
+    record = ec.extract(doc)
+    assert record["skipped"] is None
+    found = [c["text"] for c in record["comments"]]
+    assert any("a note about the result" in t for t in found)
+
+
+def test_shell_heredoc_after_unrelated_arithmetic_is_still_suppressed(tmp_path):
+    """Regression guard for the fix to the fix: a naive DOTALL/lazy regex over
+    the whole file would pair the FIRST `$((` with the NEXT `))` anywhere
+    after it -- including one belonging to a second, unrelated arithmetic
+    expression -- and would then wrongly treat everything up to there,
+    including a real heredoc's `<<`, as inside an arithmetic span. A
+    legitimate heredoc appearing after an unrelated `$(( ))` must still have
+    its body suppressed as data, not scanned for comments."""
+    doc = tmp_path / "heredoc_after_arith.sh"
+    doc.write_text(
+        "# real comment before\n"
+        "mask=$((1 << SHIFT))\n"
+        "cat <<EOF\n"
+        "this has a # inside heredoc\n"
+        "EOF\n"
+        "# real comment after\n"
+    )
+    record = ec.extract(doc)
+    assert record["skipped"] is None
+    found = [c["text"] for c in record["comments"]]
+    assert any("real comment before" in t for t in found)
+    assert any("real comment after" in t for t in found)
+    assert not any("inside heredoc" in t for t in found)
+
+
 def test_js_extension_reports_javascript_not_typescript(tmp_path):
     """I5: `.js`/`.jsx` used to map onto the `typescript` Lang entry, so
     `extract()` reported `lang: "typescript"` for a plain JS file. That erases

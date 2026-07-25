@@ -67,21 +67,47 @@ _HEREDOC_START = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 # reporting "skipped": null as if the file were fully scanned. Same guard as
 # `prmatch._heredoc_start`, ported here since this module cannot import that
 # one (see the note on `_HEREDOC_START` above).
-_ARITH_SPAN = re.compile(r"\$\(\(.*?\)\)")
+#
+# Spans are found by depth-tracked forward scan, not a DOTALL regex, and
+# deliberately NOT line-scoped: `_HEREDOC_START`'s own `\s*` matches a
+# newline, so `mask=$((1 <<\n  SHIFT))` -- a `$((` opened on one line and
+# closed on the next, a normal bash formatting style -- has its `<<` on a
+# different line than the delimiter, and a check confined to "the current
+# line" never sees the closing `))` at all. A lazy DOTALL regex would fix
+# that but introduces the opposite bug: `\$\(\(.*?\)\)` pairs the FIRST
+# `$((` in the file with the NEXT `))` anywhere after it, which can belong to
+# a second, unrelated arithmetic expression -- wrongly swallowing everything
+# between them, including a real heredoc's `<<`. Depth tracking (mirroring
+# `prmatch._arith_end`) pairs each `$((` with its own matching close and
+# nothing else's.
+def _arith_spans(text):
+    """(start, end) index pairs for every `$(( ... ))` in `text`, in order,
+    non-overlapping. An unterminated `$((` runs to end of text rather than
+    being dropped -- the same "resolve toward skipping" rule as elsewhere in
+    this module: better to over-protect a stray unclosed expansion than to
+    treat its dangling `<<` as a real heredoc opener."""
+    spans = []
+    length = len(text)
+    cursor = 0
+    while True:
+        start = text.find("$((", cursor)
+        if start == -1:
+            break
+        depth = 2
+        j = start + 3
+        while j < length and depth > 0:
+            if text[j] == "(":
+                depth += 1
+            elif text[j] == ")":
+                depth -= 1
+            j += 1
+        spans.append((start, j))
+        cursor = j
+    return spans
 
 
-def _in_arith_span(text, index):
-    """True when `index` (the start of a `<<` match) falls inside a
-    `$(( ... ))` arithmetic span on its own line."""
-    line_start = text.rfind("\n", 0, index) + 1
-    line_end = text.find("\n", index)
-    if line_end == -1:
-        line_end = len(text)
-    line = text[line_start:line_end]
-    offset = index - line_start
-    return any(
-        span.start() <= offset < span.end() for span in _ARITH_SPAN.finditer(line)
-    )
+def _in_arith_spans(spans, index):
+    return any(start <= index < end for start, end in spans)
 
 
 def _skip_heredoc(text, index, match):
@@ -378,6 +404,9 @@ def scan(text, lang):
     line_tokens = sorted(lang.line, key=len, reverse=True)
     blocks = sorted(lang.block, key=lambda pair: len(pair[0]), reverse=True)
     strings = sorted(lang.strings, key=lambda triple: len(triple[0]), reverse=True)
+    # Computed once up front (not on demand per `<<`) so a `$((` opened on one
+    # line and closed several lines later is still recognised as a single span.
+    arith_spans = _arith_spans(text) if lang.heredocs else ()
 
     while index < length:
         char = text[index]
@@ -389,7 +418,7 @@ def scan(text, lang):
 
         if lang.heredocs and text.startswith("<<", index):
             heredoc_match = _HEREDOC_START.match(text, index)
-            if heredoc_match and not _in_arith_span(text, index):
+            if heredoc_match and not _in_arith_spans(arith_spans, index):
                 new_index = _skip_heredoc(text, index, heredoc_match)
                 line += text.count("\n", index, new_index)
                 index = new_index
