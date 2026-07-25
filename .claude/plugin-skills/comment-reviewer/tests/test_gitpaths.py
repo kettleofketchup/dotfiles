@@ -33,6 +33,28 @@ def test_resolve_trunk_prefers_remote_head(cloned_with_remote):
     assert gitpaths.resolve_trunk(cloned_with_remote) == "origin/main"
 
 
+def test_resolve_trunk_falls_back_to_local_main(repo):
+    """No remote at all: the symbolic-ref loop must fail entirely and land on
+    the literal `main` candidate."""
+    assert gitpaths.resolve_trunk(repo) == "main"
+
+
+def test_resolve_trunk_falls_back_to_local_master(repo_master_only):
+    """No remote, and the only trunk-ish branch is `master`."""
+    assert gitpaths.resolve_trunk(repo_master_only) == "master"
+
+
+def test_resolve_trunk_prefers_remote_tracking_ref_over_local_branch(cloned_without_symref):
+    """No origin/HEAD symref, but origin/main still exists as a remote-tracking
+    ref alongside a local `main` -- the remote-tracking candidate must win."""
+    assert gitpaths.resolve_trunk(cloned_without_symref) == "origin/main"
+
+
+def test_resolve_trunk_raises_when_no_trunk_candidate_exists(repo_no_trunk_candidate):
+    with pytest.raises(gitpaths.GitError):
+        gitpaths.resolve_trunk(repo_no_trunk_candidate)
+
+
 def test_base_is_merge_base_not_upstream(cloned_with_remote):
     """After `push -u`, @{u} is origin/feat and the diff would be empty."""
     upstream = subprocess.run(

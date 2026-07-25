@@ -60,6 +60,66 @@ def worktree(repo):
 
 
 @pytest.fixture
+def repo_master_only(tmp_path):
+    """No remote; the only trunk-ish branch is `master` -- exercises the local
+    fallback candidate list past `main`."""
+    d = tmp_path / "master-repo"
+    d.mkdir()
+    run(d, "git", "init", "-q", "-b", "master")
+    run(d, "git", "config", "user.email", "t@example.com")
+    run(d, "git", "config", "user.name", "T")
+    (d / "seed.txt").write_text("seed\n")
+    run(d, "git", "add", "seed.txt")
+    run(d, "git", "commit", "-q", "-m", "init")
+    return d
+
+
+@pytest.fixture
+def cloned_without_symref(tmp_path):
+    """origin/main exists as a remote-tracking ref, but refs/remotes/origin/HEAD
+    has been deleted -- the symbolic-ref lookup must fail and fall through to
+    the literal candidate list, which should still prefer the remote-tracking
+    ref over the local branch of the same name.
+
+    `git clone` only creates the origin/HEAD symref when the remote already has
+    a resolvable HEAD at clone time, which requires seeding the bare repo with a
+    commit *before* cloning it -- cloning an empty bare repo (as in
+    cloned_with_remote, before its first push) creates no symref at all, so
+    there is nothing here to delete unless the seed commit exists upfront."""
+    seed = tmp_path / "seed"
+    seed.mkdir()
+    run(seed, "git", "init", "-q", "-b", "main")
+    run(seed, "git", "config", "user.email", "t@example.com")
+    run(seed, "git", "config", "user.name", "T")
+    (seed / "a.txt").write_text("a\n")
+    run(seed, "git", "add", "a.txt")
+    run(seed, "git", "commit", "-q", "-m", "init")
+    bare = tmp_path / "up.git"
+    run(tmp_path, "git", "clone", "-q", "--bare", str(seed), str(bare))
+    work = tmp_path / "work"
+    run(tmp_path, "git", "clone", "-q", str(bare), str(work))
+    run(work, "git", "symbolic-ref", "-d", "refs/remotes/origin/HEAD")
+    return work
+
+
+@pytest.fixture
+def repo_no_trunk_candidate(tmp_path):
+    """No remote, and no branch named main or master -- resolve_trunk has
+    nothing to fall back to and must raise rather than guess."""
+    d = tmp_path / "solo-repo"
+    d.mkdir()
+    run(d, "git", "init", "-q", "-b", "main")
+    run(d, "git", "config", "user.email", "t@example.com")
+    run(d, "git", "config", "user.name", "T")
+    (d / "seed.txt").write_text("seed\n")
+    run(d, "git", "add", "seed.txt")
+    run(d, "git", "commit", "-q", "-m", "init")
+    run(d, "git", "checkout", "-q", "-b", "solo")
+    run(d, "git", "branch", "-D", "main")
+    return d
+
+
+@pytest.fixture
 def cloned_with_remote(tmp_path):
     """origin/main exists and a feature branch has its own upstream set --
     the exact shape that makes @{u} the wrong base."""
