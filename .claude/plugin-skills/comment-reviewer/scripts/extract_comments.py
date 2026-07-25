@@ -207,28 +207,39 @@ GENERATED_MARKER_LINES = 30
 # byte-for-byte -- a whitespace tidy is enough to break them.
 DIRECTIVE_PATTERN = re.compile(
     r"""(?x)
-    ^\s*(?://|\#|--|/\*|<!--)\#?\s*
+    ^\s*
     (?:
-        \+ \w                                   # +goose, +kubebuilder, +migrate, +build
-      | name:\s*\w+\s*:\w                       # sqlc -- name: GetUser :one
-      | go\s*: | export\b                       # //go:embed ; //export MyFunc (no colon)
-      | nolint | noqa | nocover | no\s?cover | noinspection | NOSONAR
-      | type\s*: | pragma\s*: | pylint\s*: | mypy\s*:
-      | (?:eslint|ts|prettier|black|isort|shellcheck|rubocop|hadolint|checkov|tfsec
-        |tflint|trivy|semgrep|yamllint|ansible-lint|markdownlint|vale|istanbul|c8
-        |coverage|swiftlint|clang-format|checkstyle|reek|stylelint|deno|biome|oxlint)
-        \b[-\s:]*(?:disable|enable|ignore|skip|expect|off|on)
-      | @(?:formatter|ts-|jsx|flow|deprecated\b|pure|__PURE__)
-      | Deprecated\s*:                          # Go convention: no leading @
-      | fmt\s*:\s*(?:off|on)
-      | sourceMappingURL                         # opener above may be followed by `#`
-      | \#__PURE__
-      | (?:svelte-ignore|prettier-ignore)
-      | syntax\s*= | escape\s*= | check\s*=
-      | migrate\s*:\s*(?:up|down) | atlas\s*:
-      | [!+]                                     # SQL /*! version gate, /*+ hint --
-                                                  # the opener above already consumed `/*`
-      | <reference\s
+        /\*[!+]                                 # SQL /*! version gate, /*+ hint -- opener-
+                                                 # specific: /*!50001, /*+INDEX, with nothing
+                                                 # between /* and the marker. A bare [!+] on
+                                                 # any opener also matched Rust `//!` doc
+                                                 # comments, Go "// +1 to that", shell
+                                                 # "# +x is fine", and banner comments --
+                                                 # ordinary prose this tool exists to review.
+      |
+        (?://|\#|--|/\*|<!--)\#?\s*
+        (?:
+            \+ \w{2,}                           # +goose, +kubebuilder, +migrate, +build --
+                                                 # {2,} excludes "+1" / "+x", single-token
+                                                 # prose no real directive name is that short
+          | name:\s*\w+\s*:\w                   # sqlc -- name: GetUser :one
+          | go\s*: | export\b                   # //go:embed ; //export MyFunc (no colon)
+          | nolint | noqa | nocover | no\s?cover | noinspection | NOSONAR
+          | type\s*: | pragma\s*: | pylint\s*: | mypy\s*:
+          | (?:eslint|ts|prettier|black|isort|shellcheck|rubocop|hadolint|checkov|tfsec
+            |tflint|trivy|semgrep|yamllint|ansible-lint|markdownlint|vale|istanbul|c8
+            |coverage|swiftlint|clang-format|checkstyle|reek|stylelint|deno|biome|oxlint)
+            \b[-\s:]*(?:disable|enable|ignore|skip|expect|off|on)
+          | @(?:formatter|ts-|jsx|flow|deprecated\b|pure|__PURE__)
+          | Deprecated\s*:                      # Go convention: no leading @
+          | fmt\s*:\s*(?:off|on)
+          | sourceMappingURL                     # opener above may be followed by `#`
+          | \#__PURE__
+          | (?:svelte-ignore|prettier-ignore)
+          | syntax\s*= | escape\s*= | check\s*=
+          | migrate\s*:\s*(?:up|down) | atlas\s*:
+          | <reference\s
+        )
     )
     """,
     re.IGNORECASE,

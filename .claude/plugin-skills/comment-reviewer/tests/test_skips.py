@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 import extract_comments as ec
 
 
@@ -188,13 +190,20 @@ def test_mysql_version_gated_comment_is_protected(tmp_path):
     assert skips(target)["/*!50001 col */"] == "directive"
 
 
-def test_unrelativizable_absolute_path_does_not_skip_the_whole_repo():
-    """FINDING 5: reproduces the coordinator's repro exactly. Called on an
-    absolute path whose ancestry cannot be related to cwd (no chdir here --
-    this test's own cwd is the plugin's checkout, unrelated to /tmp/build/...),
-    a directory-shaped pattern like `(^|/)build/` must not fire: doing so
-    would silently skip the entire repository, reporting a clean sweep."""
-    assert ec.file_skip_reason("/tmp/build/proj/pkg/z.go", "") is None
+@pytest.mark.parametrize("directory", (
+    "build", "dist", "out", "gen", "vendor", "testdata",
+))
+def test_unrelativizable_absolute_path_does_not_skip_the_whole_repo(directory):
+    """FINDING 5: reproduces the coordinator's repro exactly, parametrized
+    over several directory-shaped pattern names (round 2, minor item: the
+    original test covered only `build`, one of roughly thirteen). Called on
+    an absolute path whose ancestry cannot be related to cwd (no chdir here
+    -- this test's own cwd is the plugin's checkout, unrelated to
+    /tmp/<directory>/...), a directory-shaped pattern like `(^|/)build/`
+    must not fire: doing so would silently skip the entire repository,
+    reporting a clean sweep."""
+    target = f"/tmp/{directory}/proj/pkg/z.go"
+    assert ec.file_skip_reason(target, "") is None
 
 
 def test_unrelativizable_absolute_snap_path_is_still_skipped():
@@ -217,3 +226,80 @@ def test_jsdoc_deprecated_tag_is_protected(tmp_path):
     somewhere later in the text, making it unreachable for ordinary usage."""
     target = write(tmp_path, "z.ts", "let a = 1;\n\n// @deprecated old API\n")
     assert skips(target)["// @deprecated old API"] == "directive"
+
+
+# --- Round 2: the bare `[!+]` fix for FINDINGS 3/4 was too broad. ----------
+
+
+def test_rust_inner_doc_comment_is_reviewable_again(tmp_path):
+    """ROUND 2 FINDING (Important): `//!` is Rust's inner doc-comment marker --
+    ordinary prose, exactly what this tool exists to review. The old bare
+    `[!+]` alternative (meant only for SQL `/*!` and `/*+`) matched it on any
+    opener, silently excluding every crate/module doc comment from review."""
+    target = write(tmp_path, "z.rs", "fn f() {}\n\n//! crate docs\n")
+    assert skips(target)["//! crate docs"] is None
+
+
+def test_go_plus_one_prose_is_reviewable_again(tmp_path):
+    """`// +1 to that` is ordinary prose, not a directive. This one was not
+    actually reachable through the bare `[!+]` alternative -- it matched via
+    the pre-existing `\\+\\w` alternative (a digit is a word character), a
+    second, narrower over-broad match uncovered while verifying this finding
+    by execution rather than taking the stated single-line fix at face value.
+    Fixed by requiring 2+ word characters after `+` (`\\+\\w{2,}`), which
+    excludes single-token "+1"/"+x" while still matching "+goose",
+    "+kubebuilder", "+migrate", "+build"."""
+    target = write(tmp_path, "z.go", "package p\n\n// +1 to that\n")
+    assert skips(target)["// +1 to that"] is None
+
+
+def test_shell_plus_x_prose_is_reviewable_again(tmp_path):
+    """Same root cause as the +1 case above: `# +x is fine` matched via
+    `\\+\\w` (a single letter is still \\w), not via the bare `[!+]`."""
+    target = write(tmp_path, "s.sh", "echo hi\n\n# +x is fine\n")
+    assert skips(target)["# +x is fine"] is None
+
+
+def test_c_plus_minus_tolerance_prose_is_reviewable_again(tmp_path):
+    """`/* +/- tolerance */` starts with the SQL-hint opener shape but has a
+    space before the `+`, and the character right after `+` is `/`, not a
+    word character -- neither the opener-specific `/\\*[!+]` (which requires
+    no space) nor `\\+\\w{2,}` fires, so it correctly falls through to None."""
+    target = write(tmp_path, "z.c", "int x;\n\n/* +/- tolerance */\n")
+    assert skips(target)["/* +/- tolerance */"] is None
+
+
+def test_banner_comment_is_reviewable_again(tmp_path):
+    """Extra case from the coordinator's measured blast radius (not in the
+    explicit verify-list, but the same bug): a banner/separator comment
+    starting with `+` right after the opener, with no word character
+    following, must not be treated as a directive."""
+    target = write(tmp_path, "z.go", "package p\n\n// +----- separator --+\n")
+    assert skips(target)["// +----- separator --+"] is None
+
+
+def test_sql_optimizer_hint_still_protected_after_narrowing(tmp_path):
+    """Regression: narrowing `[!+]` to be opener-specific (`/\\*[!+]`, no
+    space) must not stop the SQL hint case it was written for."""
+    target = write(tmp_path, "m.sql", "SELECT 1;\n\n/*+ INDEX(t idx) */\n")
+    assert skips(target)["/*+ INDEX(t idx) */"] == "directive"
+
+
+def test_mysql_version_gate_still_protected_after_narrowing(tmp_path):
+    """Regression: same as above for the MySQL version-gated comment."""
+    target = write(tmp_path, "m.sql", "SELECT 1;\n\n/*!50001 col */\n")
+    assert skips(target)["/*!50001 col */"] == "directive"
+
+
+def test_kubebuilder_marker_still_protected_after_tightening_plus_word(tmp_path):
+    """Regression: tightening `\\+\\w` to `\\+\\w{2,}` (to exclude "+1"/"+x")
+    must not stop `+kubebuilder`, a multi-character identifier."""
+    target = write(tmp_path, "t.go", "package p\n\n// +kubebuilder:validation:Required\n")
+    assert skips(target)["// +kubebuilder:validation:Required"] == "directive"
+
+
+def test_build_constraint_still_protected_after_tightening_plus_word(tmp_path):
+    """Regression: same as above for a Go build constraint."""
+    target = write(tmp_path, "b.go", "package p\n\n// +build !windows\n")
+    assert skips(target)["// +build !windows"] == "directive"
+
