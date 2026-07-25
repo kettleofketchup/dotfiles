@@ -19,19 +19,29 @@ def test_generated_marker_skips_the_whole_file(tmp_path):
     assert ec.extract(target)["skipped"] == "generated"
 
 
-def test_vendor_path_skips_the_whole_file(tmp_path):
+def test_vendor_path_skips_the_whole_file(tmp_path, monkeypatch):
+    """Directory-shaped patterns are only trustworthy once the path is known
+    relative to the repo root (see FINDING 5 in the fix-round report) -- chdir
+    into tmp_path so `vendor/lib/z.go` is relativizable, the normal shape a
+    caller passing repo-relative paths (e.g. from `git diff --name-only`)
+    would produce."""
+    monkeypatch.chdir(tmp_path)
     target = write(tmp_path, "vendor/lib/z.go", "// x\n")
     assert ec.extract(target)["skipped"] == "excluded-path"
 
 
-def test_fixture_path_skips_the_whole_file(tmp_path):
+def test_fixture_path_skips_the_whole_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     target = write(tmp_path, "testdata/z.go", "// x\n")
     assert ec.extract(target)["skipped"] == "excluded-path"
 
 
 def test_snapshot_suffix_skips_the_whole_file(tmp_path):
+    """Vacuous-test fix: this used to accept `unknown-language` too, which
+    means it passed even if the `.snap` pattern were deleted outright (a
+    `.snap` file has no known language either way). Assert the exact reason."""
     target = write(tmp_path, "a.snap", "// x\n")
-    assert ec.extract(target)["skipped"] in ("excluded-path", "unknown-language")
+    assert ec.extract(target)["skipped"] == "excluded-path"
 
 
 def test_first_two_lines_are_position_locked(tmp_path):
@@ -83,9 +93,15 @@ def test_go_output_marker_protects_the_comment(tmp_path):
 
 
 def test_spdx_and_licence_are_protected(tmp_path):
-    target = write(tmp_path, "l.go", "// SPDX-License-Identifier: MIT\n// Copyright 2026 X\n")
+    """Vacuous-test fix: both licence lines used to sit in the first two lines,
+    inside the position-locked shadow, so `LICENCE_PATTERN` could be deleted
+    entirely without failing this test. Move them below line 2 and assert the
+    exact reason."""
+    target = write(tmp_path, "l.go",
+                    "package p\n\n// SPDX-License-Identifier: MIT\n// Copyright 2026 X\n")
     result = skips(target)
-    assert all(v is not None for v in result.values())
+    assert result["// SPDX-License-Identifier: MIT"] == "licence"
+    assert result["// Copyright 2026 X"] == "licence"
 
 
 def test_protected_prefix_note_is_marked_not_deletable(tmp_path):
@@ -105,9 +121,12 @@ def test_the_plugins_own_samples_are_not_excluded():
     assert ec.file_skip_reason(paths.SAMPLES / "sample.go", "") is None
 
 
-def test_a_fixtures_path_is_still_excluded(tmp_path):
+def test_a_fixtures_path_is_still_excluded(tmp_path, monkeypatch):
     """The pattern itself is correct and spec-mandated -- only our own directory
-    name was wrong."""
+    name was wrong. Chdir'd into tmp_path so the path is relativizable -- see
+    FINDING 5: an absolute path that cannot be related to cwd only gets
+    filename-shaped patterns, and `fixtures/` is directory-shaped."""
+    monkeypatch.chdir(tmp_path)
     assert ec.file_skip_reason(tmp_path / "fixtures" / "z.go", "") == "excluded-path"
 
 
@@ -124,3 +143,77 @@ def test_a_repo_living_under_a_skip_named_directory_is_not_skipped(tmp_path, mon
 def test_dockerfile_syntax_directive_is_protected(tmp_path):
     target = write(tmp_path, "Dockerfile.sh", "# syntax=docker/dockerfile:1\n# free\n")
     assert skips(target)["# syntax=docker/dockerfile:1"] == "position-locked"
+
+
+# --- Fix round: six Critical/Important findings from code review. ---------
+
+
+def test_cgo_export_directive_without_a_colon_is_protected(tmp_path):
+    """FINDING 1: cgo's export directive has no colon (`//export MyFunc`), but
+    the original pattern required `(?:go|export)\\s*:`, so deleting it would
+    silently drop a C export."""
+    target = write(tmp_path, "z.go", "package p\n\n//export MyFunc\n")
+    assert skips(target)["//export MyFunc"] == "directive"
+
+
+def test_go_embed_directive_still_requires_its_colon(tmp_path):
+    """Regression guard for FINDING 1's fix: splitting `export` off from `go:`
+    must not stop `//go:embed` from matching."""
+    target = write(tmp_path, "z.go", "package p\n\n//go:embed data/*\n")
+    assert skips(target)["//go:embed data/*"] == "directive"
+
+
+def test_sourcemap_comment_with_hash_marker_is_protected(tmp_path):
+    """FINDING 2: real sourcemap comments have a literal `#` between the
+    comment opener and `sourceMappingURL` (`//# sourceMappingURL=x.map`). The
+    outer opener's `\\s*` cannot consume that `#`, so the alternative was
+    unreachable for the actual syntax."""
+    target = write(tmp_path, "z.ts", "let a = 1;\n\n//# sourceMappingURL=x.map\n")
+    assert skips(target)["//# sourceMappingURL=x.map"] == "directive"
+
+
+def test_sql_optimizer_hint_comment_is_protected(tmp_path):
+    """FINDING 3: `/*+ INDEX(t idx) */` is a SQL optimizer hint. The outer
+    opener group already consumes `/*`, so the old `/\\*[!+]` alternative
+    could never match -- it was dead code."""
+    target = write(tmp_path, "m.sql", "SELECT 1;\n\n/*+ INDEX(t idx) */\n")
+    assert skips(target)["/*+ INDEX(t idx) */"] == "directive"
+
+
+def test_mysql_version_gated_comment_is_protected(tmp_path):
+    """FINDING 4: `/*!50001 col */` is a MySQL version-gated comment; its
+    contents are executed as SQL, so rewording it changes what the database
+    runs. Same dead-code root cause as FINDING 3."""
+    target = write(tmp_path, "m.sql", "SELECT 1;\n\n/*!50001 col */\n")
+    assert skips(target)["/*!50001 col */"] == "directive"
+
+
+def test_unrelativizable_absolute_path_does_not_skip_the_whole_repo():
+    """FINDING 5: reproduces the coordinator's repro exactly. Called on an
+    absolute path whose ancestry cannot be related to cwd (no chdir here --
+    this test's own cwd is the plugin's checkout, unrelated to /tmp/build/...),
+    a directory-shaped pattern like `(^|/)build/` must not fire: doing so
+    would silently skip the entire repository, reporting a clean sweep."""
+    assert ec.file_skip_reason("/tmp/build/proj/pkg/z.go", "") is None
+
+
+def test_unrelativizable_absolute_snap_path_is_still_skipped():
+    """FINDING 5, other half: filename-shaped patterns (like `.snap$`) are
+    safe even when the path cannot be related to cwd, since they identify the
+    file itself rather than an ancestor directory."""
+    assert ec.file_skip_reason("/tmp/unrelated/dir/x.snap", "") == "excluded-path"
+
+
+def test_go_deprecated_convention_is_protected(tmp_path):
+    """FINDING 6: `// Deprecated: use X` (the Go convention, no leading `@`)
+    used to return None -- there was no alternative for it at all."""
+    target = write(tmp_path, "z.go", "package p\n\n// Deprecated: use X\n")
+    assert skips(target)["// Deprecated: use X"] == "directive"
+
+
+def test_jsdoc_deprecated_tag_is_protected(tmp_path):
+    """FINDING 6, other half: the `@deprecated` alternative had a stray
+    lookahead (`deprecated\\b(?=.*@)`) demanding a second, unrelated `@`
+    somewhere later in the text, making it unreachable for ordinary usage."""
+    target = write(tmp_path, "z.ts", "let a = 1;\n\n// @deprecated old API\n")
+    assert skips(target)["// @deprecated old API"] == "directive"
