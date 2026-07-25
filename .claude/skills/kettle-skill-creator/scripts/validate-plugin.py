@@ -58,19 +58,27 @@ def validate_plugin_root(plugin_dir: Path, name: str) -> list[str]:
         except ValueError as exc:
             errors.append(f"{name}: .claude-plugin/plugin.json does not parse: {exc}")
         else:
-            if data.get("name") != name:
+            if not isinstance(data, dict):
+                errors.append(
+                    f"{name}: .claude-plugin/plugin.json must contain a JSON object"
+                )
+            elif data.get("name") != name:
                 errors.append(
                     f"{name}: manifest name {data.get('name')!r} does not match the directory"
                 )
 
     hooks_file = plugin_dir / "hooks" / "hooks.json"
     if hooks_file.is_file():
+        parsed_ok = True
         try:
             payload = json.loads(hooks_file.read_text(encoding="utf-8"))
         except ValueError as exc:
             errors.append(f"{name}: hooks/hooks.json does not parse: {exc}")
+            parsed_ok = False
             payload = None
-        if isinstance(payload, dict):
+        if parsed_ok and not isinstance(payload, dict):
+            errors.append(f"{name}: hooks/hooks.json must contain a JSON object")
+        elif isinstance(payload, dict):
             if "hooks" not in payload:
                 errors.append(
                     f"{name}: hooks/hooks.json needs a top-level 'hooks' key; "

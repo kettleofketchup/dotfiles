@@ -60,8 +60,12 @@ def test_manifest_at_plugin_root_is_rejected(tmp_path):
 
 def test_unwrapped_hooks_json_is_rejected(tmp_path):
     result = validate(make_plugin(tmp_path, wrap_hooks=False))
+    combined = result.stdout + result.stderr
     assert result.returncode != 0
-    assert "hooks" in (result.stdout + result.stderr).lower()
+    # Distinctive fragment of the top-level-wrapper message specifically, not
+    # any hooks.json-related error -- a substring like "hooks" would also
+    # match if the wrapper check were removed but some other error remained.
+    assert "top-level 'hooks' key" in combined
 
 
 def test_relative_hook_command_is_rejected(tmp_path):
@@ -87,6 +91,31 @@ def test_malformed_hooks_json_reports_an_error_not_a_traceback(tmp_path):
     assert result.returncode != 0
     assert "Traceback" not in combined
     assert "objects" in combined or "must" in combined
+
+
+def test_non_object_manifest_reports_an_error_not_a_traceback(tmp_path):
+    """Valid JSON that isn't an object (e.g. a bare list) must not crash
+    validate_plugin_root when it calls .get('name') on the parsed value."""
+    repo = make_plugin(tmp_path)
+    (repo / "plugins" / "demo" / ".claude-plugin" / "plugin.json").write_text("[]")
+    result = validate(repo)
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "Traceback" not in combined
+    assert "JSON object" in combined
+
+
+def test_non_object_hooks_json_is_rejected_not_silently_ok(tmp_path):
+    """A hooks.json whose top-level value is not an object (e.g. a bare list)
+    must not be silently treated as absent -- that is a hook that can never
+    register, and the validator must not print OK for it."""
+    repo = make_plugin(tmp_path)
+    (repo / "plugins" / "demo" / "hooks" / "hooks.json").write_text("[]")
+    result = validate(repo)
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "Traceback" not in combined
+    assert "JSON object" in combined
 
 
 def test_skill_only_plugin_still_validates(tmp_path):
