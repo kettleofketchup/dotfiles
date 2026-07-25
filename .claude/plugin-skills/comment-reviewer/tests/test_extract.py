@@ -165,3 +165,129 @@ def test_main_reads_paths_from_stdin(tmp_path, capsys, monkeypatch):
     ec.main()
     payload = json.loads(capsys.readouterr().out)
     assert payload["files"][0]["lang"] == "go"
+
+
+# --- Fix round: three Critical findings, all in EXTENSIONS/LANGS mappings. ---
+# Each test is paired -- a data literal must NOT be emitted AND a real comment
+# in the same file MUST still be found -- so none of these can pass vacuously
+# by the extractor simply returning an empty list.
+
+
+def test_toml_triple_quoted_string_is_not_scanned_for_comments(tmp_path):
+    """FINDING 1: `.toml` used to map to the `shell` Lang, which has no
+    multi-line string form, so a `#` inside a TOML triple-quoted string was
+    emitted as a real line comment -- a data literal offered up for editing."""
+    doc = tmp_path / "sample.toml"
+    doc.write_text(
+        "# real comment\n"
+        'text = """\n'
+        "# looks like a comment but is DATA inside a TOML string\n"
+        '"""\n'
+    )
+    record = ec.extract(doc)
+    assert record["lang"] == "toml"
+    found = [c["text"] for c in record["comments"]]
+    assert any("real comment" in t for t in found)
+    assert not any("looks like a comment" in t for t in found)
+
+
+def test_kotlin_raw_string_is_not_scanned_for_comments(tmp_path):
+    """FINDING 2: `.kt` used to map to the `c` Lang, which has no
+    triple-quoted form, so a `//` inside a Kotlin raw string was emitted as a
+    real line comment."""
+    doc = tmp_path / "sample.kt"
+    doc.write_text(
+        "// real comment\n"
+        'val s = """\n'
+        "// this is DATA inside a Kotlin raw string\n"
+        '"""\n'
+    )
+    record = ec.extract(doc)
+    assert record["lang"] == "kotlin"
+    found = [c["text"] for c in record["comments"]]
+    assert any("real comment" in t for t in found)
+    assert not any("DATA inside a Kotlin" in t for t in found)
+
+
+def test_kotlin_nested_block_comment_covers_the_whole_comment(tmp_path):
+    """Kotlin block comments nest by specification, like Rust's -- the `c`
+    Lang Kotlin used to borrow does not nest, so the first `*/` would end the
+    comment early and leave a dangling ` still outer */` behind as code."""
+    doc = tmp_path / "nested.kt"
+    doc.write_text("/* outer /* inner */ still outer */\n// trailing\n")
+    record = ec.extract(doc)
+    assert record["lang"] == "kotlin"
+    spans_ = record["comments"]
+    block = [c for c in spans_ if c["kind"] == "block"][0]
+    assert block["text"].endswith("*/")
+    assert block["text"].count("/*") == 2
+    assert any("trailing" in c["text"] for c in spans_)
+
+
+def test_java_text_block_is_not_scanned_for_comments(tmp_path):
+    """FINDING 2 (Java half): `.java` also used to map to the `c` Lang, so a
+    `//` inside a Java text block was emitted as a real line comment."""
+    doc = tmp_path / "sample.java"
+    doc.write_text(
+        "// real comment\n"
+        'String s = """\n'
+        "// this is DATA inside a Java text block\n"
+        '""";\n'
+    )
+    record = ec.extract(doc)
+    assert record["lang"] == "java"
+    found = [c["text"] for c in record["comments"]]
+    assert any("real comment" in t for t in found)
+    assert not any("DATA inside a Java" in t for t in found)
+
+
+def test_shell_heredoc_body_is_not_scanned_for_comments(tmp_path):
+    """FINDING 3: a heredoc body is literal data passed to a command, not
+    shell syntax, so a `#` inside it was emitted as a real line comment."""
+    doc = tmp_path / "heredoc.sh"
+    doc.write_text(
+        "# real comment\n"
+        "cat <<EOF\n"
+        "this has a # inside heredoc\n"
+        "EOF\n"
+    )
+    record = ec.extract(doc)
+    found = [c["text"] for c in record["comments"]]
+    assert any("real comment" in t for t in found)
+    assert not any("inside heredoc" in t for t in found)
+
+
+def test_shell_heredoc_with_dash_and_quoted_delimiter(tmp_path):
+    """`<<-` strips leading tabs from the delimiter line, and a quoted
+    delimiter (`<<'EOF'`) suppresses expansion inside the body -- neither
+    changes that the body is data, not shell syntax."""
+    doc = tmp_path / "heredoc2.sh"
+    doc.write_text(
+        "# real comment\n"
+        "cat <<-'EOF'\n"
+        "\tthis has a # inside heredoc too\n"
+        "\tEOF\n"
+    )
+    record = ec.extract(doc)
+    found = [c["text"] for c in record["comments"]]
+    assert any("real comment" in t for t in found)
+    assert not any("inside heredoc too" in t for t in found)
+
+
+def test_python_triple_quoted_string_inside_function_body_is_not_a_docstring(tmp_path):
+    """Regression guard: a triple-quoted literal that is not the first
+    statement of a function -- here it follows an assignment -- is data, not
+    a docstring, even though it sits inside a function body."""
+    doc = tmp_path / "inline.py"
+    doc.write_text(
+        "def f():\n"
+        "    x = 1\n"
+        '    y = """not a docstring because an assignment precedes it\n'
+        '    still just data"""\n'
+        "    return y  # trailing\n"
+    )
+    record = ec.extract(doc)
+    found = record["comments"]
+    assert not any("not a docstring" in c["text"] for c in found)
+    assert not any(c["kind"] == "docstring" for c in found)
+    assert any("trailing" in c["text"] for c in found)

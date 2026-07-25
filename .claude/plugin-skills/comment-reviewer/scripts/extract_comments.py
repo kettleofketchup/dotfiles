@@ -8,6 +8,11 @@ every ambiguity resolves toward skipping.
 
 Reads newline-separated paths on stdin (not argv -- a wide rename can exceed
 argv limits) and writes one JSON object on stdout.
+
+Note: a path containing an embedded newline cannot be represented in this
+protocol -- it fragments into multiple stdin lines, each looked up as its own
+(almost certainly nonexistent) path. Out of scope: this is a limitation of the
+newline-separated protocol itself, not something this module works around.
 """
 
 import json
@@ -29,7 +34,11 @@ BINARY_SNIFF_BYTES = 8192
 #             that swallows every comment in the rest of the file.
 # docstrings: whether a 3-character string delimiter in docstring position is a
 #             reviewable comment (Python) rather than data
-Lang = namedtuple("Lang", "line block strings docstrings", defaults=(False,))
+# heredocs:   whether `<<[-]DELIM` / `<<[-]'DELIM'` / `<<[-]"DELIM"` opens a shell
+#             heredoc whose body is skipped outright. The body is literal data
+#             passed to a command, not shell syntax -- a `#` inside it is not a
+#             comment, and scanning it as ordinary code would emit one anyway.
+Lang = namedtuple("Lang", "line block strings docstrings heredocs", defaults=(False, False))
 
 _C_STRINGS = (('"', '"', True, False), ("'", "'", True, False))
 
@@ -37,6 +46,35 @@ _C_STRINGS = (('"', '"', True, False), ("'", "'", True, False))
 # class, or function. Anywhere else it is data, and rewriting it would change what
 # the program does -- so the same delimiter has to be read two ways.
 _DOCSTRING_OWNER = re.compile(r"^(async\s+def|def|class)\b")
+
+# Reimplemented locally rather than imported from hooks/scripts/prmatch.py --
+# that module installs to a different path and cannot be imported from here.
+# Matches `<<EOF`, `<<-EOF`, `<<'EOF'`, `<<"EOF"`.
+_HEREDOC_START = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+
+def _skip_heredoc(text, index, match):
+    """Index just past a heredoc body opened by `match` at `index`.
+
+    The body runs from the line after the opener to the first line whose
+    stripped content equals the delimiter (leading tabs, permitted by `<<-`,
+    fall out of the strip along with everything else). A heredoc with no
+    closing delimiter runs to end of file rather than raising -- the same
+    "resolve toward skipping" rule as everywhere else in this module.
+    """
+    delimiter = match.group(2)
+    length = len(text)
+    line_end = text.find("\n", index)
+    if line_end == -1:
+        return length
+    cursor = line_end + 1
+    while True:
+        next_nl = text.find("\n", cursor)
+        segment_end = next_nl if next_nl != -1 else length
+        segment = text[cursor:segment_end]
+        if segment.strip() == delimiter or next_nl == -1:
+            return segment_end + 1 if next_nl != -1 else length
+        cursor = next_nl + 1
 
 
 def _in_docstring_position(text, index):
@@ -49,6 +87,20 @@ def _in_docstring_position(text, index):
     return last.endswith(":") and bool(_DOCSTRING_OWNER.match(last))
 
 
+# TOML basic strings (`"`, `"""`) process backslash escapes; literal strings
+# (`'`, `'''`) do not -- a backslash there is just a character.
+_TOML_STRINGS = (
+    ('"""', '"""', True, True),
+    ("'''", "'''", False, True),
+    ('"', '"', True, False),
+    ("'", "'", False, False),
+)
+
+# Kotlin raw (triple-quoted) strings do not process escapes either; Java text
+# blocks do.
+_KOTLIN_STRINGS = (('"""', '"""', False, True),) + _C_STRINGS
+_JAVA_STRINGS = (('"""', '"""', True, True),) + _C_STRINGS
+
 LANGS = {
     "go": Lang(("//",), (("/*", "*/", False),), _C_STRINGS + (("`", "`", False, True),)),
     # Rust is the one language here that nests block comments by specification.
@@ -57,26 +109,32 @@ LANGS = {
         ("//",), (("/*", "*/", False),), _C_STRINGS + (("`", "`", True, True),)
     ),
     "c": Lang(("//",), (("/*", "*/", False),), _C_STRINGS),
+    # Kotlin block comments nest by specification, like Rust's.
+    "kotlin": Lang(("//",), (("/*", "*/", True),), _KOTLIN_STRINGS),
+    "java": Lang(("//",), (("/*", "*/", False),), _JAVA_STRINGS),
     "python": Lang(
         ("#",), (),
         (('"""', '"""', True, True), ("'''", "'''", True, True)) + _C_STRINGS,
         docstrings=True,
     ),
-    "shell": Lang(("#",), (), _C_STRINGS),
+    # Heredoc bodies are data passed to a command, not shell syntax.
+    "shell": Lang(("#",), (), _C_STRINGS, heredocs=True),
     "yaml": Lang(("#",), (), _C_STRINGS),
     "nix": Lang(("#",), (("/*", "*/", False),), _C_STRINGS),
     "sql": Lang(("--",), (("/*", "*/", False),), (("'", "'", False, False),)),
     "lua": Lang(("--",), (("--[[", "]]", False),), _C_STRINGS),
     "html": Lang((), (("<!--", "-->", False),), _C_STRINGS),
+    "toml": Lang(("#",), (), _TOML_STRINGS),
 }
 
 EXTENSIONS = {
     ".go": "go", ".rs": "rust",
     ".ts": "typescript", ".tsx": "typescript", ".js": "typescript", ".jsx": "typescript",
-    ".c": "c", ".h": "c", ".cc": "c", ".cpp": "c", ".hpp": "c", ".java": "c", ".kt": "c",
+    ".c": "c", ".h": "c", ".cc": "c", ".cpp": "c", ".hpp": "c",
+    ".java": "java", ".kt": "kotlin",
     ".py": "python", ".pyi": "python",
     ".sh": "shell", ".bash": "shell", ".zsh": "shell",
-    ".yaml": "yaml", ".yml": "yaml", ".toml": "shell",
+    ".yaml": "yaml", ".yml": "yaml", ".toml": "toml",
     ".nix": "nix",
     ".sql": "sql",
     ".lua": "lua",
@@ -130,6 +188,14 @@ def scan(text, lang):
             line += 1
             index += 1
             continue
+
+        if lang.heredocs and text.startswith("<<", index):
+            heredoc_match = _HEREDOC_START.match(text, index)
+            if heredoc_match:
+                new_index = _skip_heredoc(text, index, heredoc_match)
+                line += text.count("\n", index, new_index)
+                index = new_index
+                continue
 
         matched_string = next(
             (s for s in strings if text.startswith(s[0], index)), None
@@ -252,6 +318,9 @@ def extract(path):
         return record
 
     record["lang"] = lang
+    # Decoded without universal-newline translation, so a CRLF file's comment
+    # `text` keeps its trailing `\r`. That is deliberate: `text` is used to
+    # locate and replace the span, so it must match the file's bytes exactly.
     record["comments"] = scan(raw.decode("utf-8", errors="replace"), LANGS[lang])
     return record
 
