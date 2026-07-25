@@ -62,6 +62,13 @@ def decide(event):
     cwd = event.get("cwd") or "."
     try:
         root = gitpaths.receipt_root(cwd)
+        # An unreadable root (e.g. `chmod 000`) resolves differently by Python
+        # version: on 3.12+, Path.exists() swallows PermissionError and this
+        # returns False, falling through to a genuine deny; on the 3.9-3.11
+        # floor, .exists() re-raises and the `except OSError` below fails
+        # open instead. Both outcomes exit 0 and are safe -- deny is "review
+        # again", fail-open is "infrastructure can't help you either" -- so
+        # this is left alone rather than pinned to one behaviour.
         if (root / SENTINEL_NAME).exists():
             return None
         tree = gitpaths.head_tree(cwd)

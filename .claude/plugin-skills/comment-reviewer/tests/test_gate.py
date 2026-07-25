@@ -115,7 +115,28 @@ def test_malformed_stdin_passes(cloned_with_remote):
     assert proc.stdout.strip() in ("", "{}")
 
 
-def test_works_in_a_worktree(worktree):
-    """The receipt path bug lands here if it lands anywhere."""
+def test_worktree_without_receipt_denies(worktree):
+    """The receipt path bug lands here if it lands anywhere: `.git` is a FILE in
+    a linked worktree, so a literal `.git/`-path implementation raises
+    NotADirectoryError and the gate fails OPEN -- silently passing every PR
+    created from a worktree regardless of receipt validity. Proving resolution
+    succeeds here first is what makes the "deny" below mean something: it is
+    a real absence-of-receipt denial, not a fail-open masquerading as one.
+    """
+    trunk = gitpaths.resolve_trunk(worktree)
+    gitpaths.merge_base(trunk, worktree)  # both raise nothing -> resolution is clean
     out = invoke("gh pr create", worktree)
-    assert decision(out) in (None, "deny")  # never a crash
+    assert decision(out) == "deny"
+
+
+def test_worktree_with_valid_receipt_passes(worktree):
+    seed_receipt(worktree)
+    assert decision(invoke("gh pr create", worktree)) is None
+
+
+def test_primary_clone_receipt_does_not_satisfy_worktree_gate(repo, worktree):
+    """receipt_root resolves via `--absolute-git-dir`, not `--git-common-dir`,
+    precisely so a receipt written for the primary clone's tree cannot leak
+    into a linked worktree sitting on a different branch."""
+    seed_receipt(repo)
+    assert decision(invoke("gh pr create", worktree)) == "deny"
