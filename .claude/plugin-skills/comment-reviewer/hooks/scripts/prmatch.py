@@ -33,7 +33,6 @@ _HEREDOC_START = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 # real `gh pr create` sitting in between. Skip any heredoc-shaped match that
 # falls inside one of these spans.
 _ARITH_SPAN = re.compile(r"\$\(\(.*?\)\)")
-_LINE_CONTINUATION = re.compile(r"\\\n")
 _SKIP_TRUTHY = frozenset({"1", "true", "yes", "on"})
 # `--help` prints usage and creates nothing; denying it is pure friction --
 # but only when it is actually the flag being invoked, not the *value* of a
@@ -78,18 +77,6 @@ def _heredoc_start(line):
     return match
 
 
-def _collapse_line_continuations(command):
-    """Join a trailing backslash-newline pair, mirroring the shell's own
-    line-continuation rule, so `gh pr \\\n create` still reads as one
-    command. Applied after heredoc stripping so a literal backslash-newline
-    inside a heredoc body (already removed) can't confuse it; it does not
-    itself distinguish quoted from unquoted context, which is an accepted
-    simplification -- a backslash-newline pair inside single quotes is rare
-    and, if merged, only ever produces an extra false positive, not a missed
-    invocation."""
-    return _LINE_CONTINUATION.sub("", command)
-
-
 class _Frame:
     """One level of quoting/substitution context while scanning.
 
@@ -118,6 +105,20 @@ def _split_top_level(command):
     `url=$(gh pr create --fill)` stays visible. Never raises: an unmatched
     substitution opener, like an unmatched quote, just runs to the end of the
     string instead of aborting the scan.
+
+    A backslash-newline pair is a line continuation -- consumed with no
+    output -- everywhere EXCEPT inside single quotes, where bash gives
+    backslash no special meaning at all: a single-quoted argument that
+    contains a backslash immediately followed by a newline keeps both
+    characters (plus whatever comes after) as one literal argument
+    spanning two lines, rather than joining into a plain word on one line.
+    Line continuation has to live here, inside the same quote-tracking
+    state machine, rather than as a preprocessing pass over the raw string:
+    a blind pass can't tell single-quoted backslash-newline apart from the
+    unquoted or double-quoted kind, and folding them together would read
+    a `gh` invocation whose real, single-quoted argument merely *looks
+    like* "pr" split across two lines as an actual `gh pr create` --
+    a false positive.
     """
     results = []
     stack = [_Frame("top")]
@@ -134,6 +135,12 @@ def _split_top_level(command):
         ch = command[i]
 
         if ch == "\\" and not frame.in_squote:
+            if command[i + 1 : i + 2] == "\n":
+                # Line continuation outside single quotes (unquoted or
+                # inside double quotes): consume both characters, emit
+                # nothing, same as the shell does.
+                i += 2
+                continue
             frame.buffer.append(ch)
             if i + 1 < n:
                 frame.buffer.append(command[i + 1])
@@ -258,7 +265,7 @@ def segments(command):
     aborting the whole command, so a good segment before or after it is never
     hidden by one that got mangled.
     """
-    pieces = _split_top_level(_collapse_line_continuations(strip_heredocs(command)))
+    pieces = _split_top_level(strip_heredocs(command))
     out = []
     for piece in pieces:
         try:

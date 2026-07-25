@@ -153,3 +153,44 @@ def test_fix_round_findings_match(command):
     `test_matches_real_invocations`) so a future regression in any single
     one of them fails under a name that names the finding."""
     assert prmatch.matches(command)
+
+
+# --- Round 2 (coordinator review of the fix round) ---
+#
+# `_collapse_line_continuations` was a blunt regex pre-pass over the raw
+# string, applied before any quote tracking. Confirmed against real bash:
+# inside single quotes backslash has no special meaning at all, so a
+# backslash-newline pair there is NOT a continuation -- it is two literal
+# characters that stay part of one quoted argument. The blind pre-pass
+# joined them anyway, producing a false-positive `matches()` for commands
+# that never actually invoke `gh pr create`. Line continuation now lives
+# inside `_split_top_level`'s own quote-tracking state machine instead.
+
+
+def test_single_quoted_backslash_newline_is_not_a_continuation():
+    """A backslash-newline pair inside single quotes is two literal
+    characters in bash, not a continuation. `gh 'p\\nr' create` never
+    invokes `gh pr create` -- the second argument is the four characters
+    p, backslash, newline, r, not `pr`."""
+    assert not prmatch.matches("gh 'p\\\nr' create")
+
+
+def test_single_quoted_backslash_newline_in_the_cli_name_is_not_a_continuation():
+    """Same rule, but the mangled token is the CLI name itself: folding the
+    backslash-newline together would turn a single-quoted non-`gh` argument
+    into what looks like a bare `gh` invocation."""
+    assert not prmatch.matches("'g\\\nh' pr create")
+
+
+def test_unquoted_line_continuation_still_matches():
+    """Finding 7 from round 1 must still hold: outside any quoting,
+    backslash-newline IS a continuation, and `gh pr create` split across
+    two lines this way is still recognised."""
+    assert prmatch.matches("gh pr \\\ncreate")
+
+
+def test_double_quoted_line_continuation_still_matches():
+    """Backslash-newline inside DOUBLE quotes is also a continuation in
+    bash (unlike single quotes) -- it only affects the quoted argument's
+    contents, not the invocation itself, which must still match."""
+    assert prmatch.matches('gh pr create --title "a\\\nb"')
