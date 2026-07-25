@@ -33,6 +33,24 @@ def test_resolve_trunk_prefers_remote_head(cloned_with_remote):
     assert gitpaths.resolve_trunk(cloned_with_remote) == "origin/main"
 
 
+def test_resolve_trunk_uses_symbolic_ref_when_target_is_not_a_literal_candidate(
+    cloned_with_symref_pointing_elsewhere,
+):
+    """origin/HEAD -> origin/trunk. No literal-candidate check can produce
+    "origin/trunk", so returning it proves the symbolic-ref loop ran and
+    succeeded, rather than coincidentally matching the fallback list."""
+    assert gitpaths.resolve_trunk(cloned_with_symref_pointing_elsewhere) == "origin/trunk"
+
+
+def test_resolve_trunk_checks_upstream_remote_in_symbolic_ref_loop(
+    cloned_with_upstream_remote_only,
+):
+    """No `origin` remote exists; only `upstream` does. Returning an
+    upstream/... ref proves the "upstream" entry in the first loop's remote
+    tuple was actually tried."""
+    assert gitpaths.resolve_trunk(cloned_with_upstream_remote_only) == "upstream/main"
+
+
 def test_resolve_trunk_falls_back_to_local_main(repo):
     """No remote at all: the symbolic-ref loop must fail entirely and land on
     the literal `main` candidate."""

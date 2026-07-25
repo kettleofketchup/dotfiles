@@ -74,19 +74,14 @@ def repo_master_only(tmp_path):
     return d
 
 
-@pytest.fixture
-def cloned_without_symref(tmp_path):
-    """origin/main exists as a remote-tracking ref, but refs/remotes/origin/HEAD
-    has been deleted -- the symbolic-ref lookup must fail and fall through to
-    the literal candidate list, which should still prefer the remote-tracking
-    ref over the local branch of the same name.
-
-    `git clone` only creates the origin/HEAD symref when the remote already has
-    a resolvable HEAD at clone time, which requires seeding the bare repo with a
-    commit *before* cloning it -- cloning an empty bare repo (as in
-    cloned_with_remote, before its first push) creates no symref at all, so
-    there is nothing here to delete unless the seed commit exists upfront."""
-    seed = tmp_path / "seed"
+def _seeded_bare(tmp_path, name="up"):
+    """A bare repo with one commit already on `main` -- `git clone` only
+    auto-creates a remote's origin/HEAD symref when the remote's HEAD is
+    resolvable at clone time, so every fixture that needs a real symref has to
+    seed the bare repo with a commit before it is cloned. (Cloning a still-
+    empty bare repo, as `cloned_with_remote` does before its first push,
+    creates no symref at all.)"""
+    seed = tmp_path / f"{name}-seed"
     seed.mkdir()
     run(seed, "git", "init", "-q", "-b", "main")
     run(seed, "git", "config", "user.email", "t@example.com")
@@ -94,11 +89,49 @@ def cloned_without_symref(tmp_path):
     (seed / "a.txt").write_text("a\n")
     run(seed, "git", "add", "a.txt")
     run(seed, "git", "commit", "-q", "-m", "init")
-    bare = tmp_path / "up.git"
+    bare = tmp_path / f"{name}.git"
     run(tmp_path, "git", "clone", "-q", "--bare", str(seed), str(bare))
+    return bare
+
+
+@pytest.fixture
+def cloned_without_symref(tmp_path):
+    """origin/main exists as a remote-tracking ref, but refs/remotes/origin/HEAD
+    has been deleted -- the symbolic-ref lookup must fail and fall through to
+    the literal candidate list, which should still prefer the remote-tracking
+    ref over the local branch of the same name."""
+    bare = _seeded_bare(tmp_path)
     work = tmp_path / "work"
     run(tmp_path, "git", "clone", "-q", str(bare), str(work))
     run(work, "git", "symbolic-ref", "-d", "refs/remotes/origin/HEAD")
+    return work
+
+
+@pytest.fixture
+def cloned_with_symref_pointing_elsewhere(tmp_path):
+    """origin/HEAD is a real, intact symbolic ref, but repointed at a ref name
+    the literal-candidate list does not contain. Only the symbolic-ref loop
+    can produce "origin/trunk" -- the second loop only ever checks
+    origin/main, origin/master, main, and master -- so this genuinely
+    discriminates the first loop's success path from the fallback."""
+    bare = _seeded_bare(tmp_path)
+    work = tmp_path / "work"
+    run(tmp_path, "git", "clone", "-q", str(bare), str(work))
+    run(work, "git", "update-ref", "refs/remotes/origin/trunk", "refs/remotes/origin/main")
+    run(work, "git", "update-ref", "-d", "refs/remotes/origin/main")
+    run(work, "git", "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk")
+    return work
+
+
+@pytest.fixture
+def cloned_with_upstream_remote_only(tmp_path):
+    """No `origin` remote at all -- the only remote is named `upstream`. A
+    clone still sets an origin/HEAD-equivalent symref for whatever remote name
+    it is given, so this exercises the "upstream" entry in the first loop's
+    remote tuple, which no origin-based fixture can reach."""
+    bare = _seeded_bare(tmp_path)
+    work = tmp_path / "work"
+    run(tmp_path, "git", "clone", "-q", "--origin", "upstream", str(bare), str(work))
     return work
 
 
