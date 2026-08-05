@@ -420,7 +420,6 @@ fi
 # opencode
 export PATH=$HOME/.opencode/bin:$PATH
 
-. "$HOME/.local/share/../bin/env"
 
 # >>> hookshot completions >>>
 fpath=("/home/kettle/.local/share/zsh/site-functions" $fpath); autoload -Uz compinit && compinit
