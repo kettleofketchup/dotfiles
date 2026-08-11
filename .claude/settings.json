@@ -48,7 +48,6 @@
       "Bash(echo:*)",
       "Bash(cat:*)",
       "Skill(superpowers:finishing-a-development-branch)",
-      "Bash(curl:*)",
       "Bash(go install:*)",
       "Bash(tar:*)",
       "Bash(sudo mv:*)",
@@ -233,7 +232,6 @@
       "Bash(bash /tmp/summarize_ldap.sh)",
       "Bash(sops --version)",
       "Bash(nmap -Pn -p 22 --open -oG - 10.20.11.220-240)",
-      "Bash(kubectl *)",
       "Bash(pstree -p 2912617)",
       "Bash(ps:*)",
       "Bash(pstree -p 3045204)",
@@ -355,7 +353,6 @@
       "Bash(touch /tmp/globtest/src/openai/gpt-oss-120b/e4ce123/a.safetensors)",
       "Bash(mkdir -p /tmp/globtest/src/meta/legacy)",
       "Bash(touch /tmp/globtest/src/meta/legacy/b.safetensors)",
-      "Bash(sort curl *)",
       "Bash(sort echo *)",
       "Bash(awk '{print \"local size:\", $5}')",
       "Bash(nix-instantiate *)",
@@ -477,9 +474,7 @@
       "Bash(npm view *)",
       "Bash(gh run *)",
       "Bash(pstree -p 2596742)",
-      "Bash(/home/kettle/git_repos/builder/automation/scripts/check-hid-truthy-trap.sh)",
-      "Bash(/usr/bin/curl -sk \"https://copy.example.lan/cxa/releases/edgeos/?ls\" -H \"PW: $\\(sops -d /home/kettle/git_repos/builder/automation/ansible/vars/environments/example.secrets.yml)",
-      "Bash(/usr/bin/curl -sk \"https://copy.example.lan/cxa/models/?ls\" -H \"PW: $\\(sops -d /home/kettle/git_repos/builder/automation/ansible/vars/environments/example.secrets.yml)"
+      "Bash(/home/kettle/git_repos/builder/automation/scripts/check-hid-truthy-trap.sh)"
     ],
     "deny": [
       "Read(~/.ssh/*)",
