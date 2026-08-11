@@ -2,7 +2,7 @@
 name: openhands
 last_updated: 2026-08-11
 version: app 1.8 (V1), agent-server 1.26.0 (workspace/repo behavior verified on 1.40.1), agent-canvas Helm chart (OSS)
-description: Self-hosted OpenHands AI coding agent. Use for Docker/Helm deploys, sandbox runtimes, LLM and LiteLLM config, subscription auth, attaching repos/workspaces/backends, Python SDK, MCP, skills/hooks, or multi-user auth.
+description: Self-hosted OpenHands AI coding agent. Use for Docker/Helm deploys, sandbox runtimes, LLM and LiteLLM config, attaching repos/workspaces/backends, Python SDK, MCP, skills/hooks, or multi-user auth.
 ---
 
 # OpenHands
