@@ -232,7 +232,6 @@
       "Bash(ssh-keygen -R 10.20.11.86 -f /home/kettle/.ssh/edge-builder/known_hosts)",
       "Bash(bash /tmp/summarize_ldap.sh)",
       "Bash(sops --version)",
-      "Bash(sops --set '[\"ldap_read_password\"] \"***REMOVED***\"' automation/ansible/vars/environments/example.secrets.yml)",
       "Bash(nmap -Pn -p 22 --open -oG - 10.20.11.220-240)",
       "Bash(kubectl *)",
       "Bash(pstree -p 2912617)",
@@ -491,7 +490,45 @@
     ],
     "defaultMode": "default"
   },
-  "hooks": {},
+  "model": "opus[1m]",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "(AskUserQuestion|mcp__.*__AskUserQuestion)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kettle/dotfiles/.claude/skills/gstack/hosts/claude/hooks/question-log-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "(AskUserQuestion|mcp__.*__AskUserQuestion)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kettle/dotfiles/.claude/skills/gstack/hosts/claude/hooks/question-preference-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kettle/dotfiles/.claude/hooks/preexisting-nudge.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
@@ -517,6 +554,8 @@
     }
   },
   "effortLevel": "high",
+  "tui": "fullscreen",
+  "skipWorkflowUsageWarning": true,
   "theme": "dark",
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true
