@@ -1,11 +1,11 @@
 ---
-name: zod-form-validation
+name: zod
 description: Zod schema validation and React Hook Form integration for TypeScript frontends. This skill should be used when creating forms, defining API schemas, validating form data, implementing type-safe validation, using ZodResolver with React Hook Form, or migrating legacy forms to the Zod + React Hook Form pattern.
 ---
 
 # Zod Form Validation Skill
 
-Implements type-safe form validation using Zod schemas with React Hook Form integration in the DTX frontend.
+Implements type-safe form validation using Zod schemas with React Hook Form in a TypeScript React frontend.
 
 ## Quick Reference
 
@@ -62,7 +62,7 @@ const onSubmit = (data: z.infer<typeof MySchema>) => {
 ### Schema Location
 
 Define schemas in `~/components/<feature>/schemas.ts`:
-- `UserSchema` in `~/components/user/schemas.ts`
+- `ProfileSchema` in `~/components/user/schemas.ts`
 - `TeamSchema` in `~/components/team/schemas.ts`
 - `GameSchema` in `~/components/game/schemas.ts`
 
@@ -71,8 +71,8 @@ Define schemas in `~/components/<feature>/schemas.ts`:
 Always use `z.infer<typeof Schema>` for types instead of manual interfaces:
 
 ```typescript
-export const UserSchema = z.object({ /* ... */ });
-export type UserType = z.infer<typeof UserSchema>;
+export const ProfileSchema = z.object({ /* ... */ });
+export type ProfileType = z.infer<typeof ProfileSchema>;
 ```
 
 ### Error Handling
@@ -103,7 +103,9 @@ toast.promise(apiCall(data), {
 For comprehensive documentation:
 - [Zod Schema Patterns](references/zod-schemas.md) - Schema types, validation, composition
 - [React Hook Form Integration](references/react-hook-form.md) - Form setup, field types, error handling
+- [React Hook Form: Submission & Arrays](references/react-hook-form-advanced.md) - Submission, nested fields, array fields, accessibility
 - [Form Field Components](references/form-fields.md) - Input, Select, Checkbox patterns
+- [Advanced Form Fields](references/form-fields-advanced.md) - Checkbox, date picker, multi-select, conditional fields
 
 ## Migration Guide
 
@@ -115,7 +117,7 @@ When migrating legacy forms from manual `useState` to React Hook Form + Zod:
 4. Remove manual error state management
 5. Wrap form in `<Form {...form}>` provider
 
-Reference implementation: `~/pages/profile/profile.tsx`
+See `references/react-hook-form-advanced.md` for a full worked page.
 
 ## Common Patterns
 
@@ -136,8 +138,8 @@ const Schema = z.object({
 
 ```typescript
 const Schema = z.object({
-  nickname: z.string().nullable().optional(),
-  mmr: z.number().min(0).nullable().optional(),
+  displayName: z.string().nullable().optional(),
+  yearsExperience: z.number().min(0).nullable().optional(),
 });
 ```
 
@@ -157,7 +159,7 @@ const Schema = z.object({
 
 ## Dependencies
 
-Required packages (already installed in DTX frontend):
+Required packages:
 - `zod: ^4.1.5`
 - `react-hook-form: ^7.62.0`
 - `@hookform/resolvers: ^5.2.1`
