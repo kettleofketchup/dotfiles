@@ -6,6 +6,7 @@
 - Callouts use Alert
 - Empty states use Empty component
 - Toast notifications use sonner
+- Tooltips share one root TooltipProvider
 - Choosing between overlay components
 - Dialog, Sheet, and Drawer always need a Title
 - Card structure
@@ -93,6 +94,31 @@ toast("File deleted.", {
   action: { label: "Undo", onClick: () => undoDelete() },
 })
 ```
+
+---
+
+## Tooltips share one root TooltipProvider
+
+`Tooltip` needs a `TooltipProvider` ancestor. Mount **one** provider high in the tree (app root, or the root of each independently-mounted island) — never per-tooltip or per-component. The provider owns the shared open/close delay state, so a single root provider makes tooltips faster (subsequent ones skip the hover delay via `skipDelayDuration`) and avoids redundant context.
+
+```tsx
+// root.tsx / island entry — ONE provider wraps everything
+<TooltipProvider delayDuration={300}>
+  <App />
+</TooltipProvider>
+
+// anywhere below — no local provider needed
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Button variant="ghost" size="icon" aria-label="Settings">
+      <SettingsIcon />
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>Settings</TooltipContent>
+</Tooltip>
+```
+
+Incorrect: wrapping each `<Tooltip>` (or each component that uses tooltips) in its own `TooltipProvider` — that defeats the shared delay and re-creates context needlessly.
 
 ---
 
