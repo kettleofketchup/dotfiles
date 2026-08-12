@@ -47,6 +47,16 @@ Protect apps behind Traefik using Authentik proxy provider outpost.
 - Headers: `X-authentik-username`, `X-authentik-groups`, `X-authentik-email`
 - See [middleware-setup.md](references/middleware-setup.md) for setup, CRDs, and headers
 - See [middleware-blueprint.md](references/middleware-blueprint.md) for blueprint example
+- **Fronting an SPA or anything using XHR/SSE/WebSocket? Read
+  [forward-auth-xhr-cors.md](references/forward-auth-xhr-cors.md) BEFORE shipping.**
+  `access_token_validity` defaults to `hours=1`, and the outpost re-mints by **302 to
+  the authorize flow**. That is invisible on navigation and fatal on XHR — the redirect
+  crosses origin, so the browser turns it into a CORS error the page cannot intercept,
+  and the token can never be re-minted without a manual reload. Presents as random
+  disconnects/timeouts, not as an auth problem. Fix is a longer
+  `access_token_validity` (bounded above by `refresh_token_validity`, and equal to the
+  group-revocation lag) plus a second middleware on `/auth/nginx` (401, no redirect)
+  selected by `Sec-Fetch-Mode`.
 
 ### Hiding Applications from the User Library
 Use `meta_launch_url: "blank://blank"` to hide a proxy-provider Application's tile from My Applications without changing its policies. The literal is `blank://blank` — `blank://` alone fails Authentik's URL validator with `Enter a valid URL`. Hide forward-auth proxies that **duplicate** an existing OIDC/SAML user-facing app; keep visible (with a real launch URL) for proxies that ARE the only user-facing entry.
