@@ -1,7 +1,7 @@
 ---
 name: docker
-version: 2026-02-01
-description: Docker build optimization. Use for Dockerfiles, multi-stage builds, BuildKit cache mounts, .dockerignore, docker-compose.yml, CI/CD caching (GitHub Actions, GitLab CI), and language-specific patterns.
+version: 2026-08-12
+description: Docker builds, Compose, and Docker-in-Docker for CI. Use when writing Dockerfiles, optimizing build times, multi-stage builds, BuildKit cache mounts, docker-compose.yml, or CI/CD pipelines (GitHub/GitLab/Forgejo Actions) — including docker-in-docker (dind) runners, rootless dind, bind-mount-vs-build-context confusion, and "mkdir PATH: permission denied" mount failures. Covers layer ordering, dependency caching, .dockerignore, multi-stage, BuildKit, Compose, and dind mount patterns.
 ---
 
 # Docker Layer Optimization
@@ -95,6 +95,10 @@ Slow build? Check in order:
 3. Not using BuildKit cache mounts? → Downloads deps every build
 4. Not using multi-stage? → Large final image, slow push/pull
 
+Bind mount or `mkdir PATH: permission denied` in a docker-in-docker CI runner, or files
+missing after switching a mount to `COPY`? See `references/docker-in-docker-mounts.md`
+(it is path visibility on the daemon, not permission).
+
 ## References
 
 - `references/language-patterns.md` - Node.js, Python patterns with cache mounts
@@ -105,3 +109,6 @@ Slow build? Check in order:
 - `references/buildkit-bake.md` - Docker Bake multi-target builds (HCL)
 - `references/compose-services.md` - Compose structure, build, health checks, dependencies
 - `references/compose-networking.md` - Compose networking, volumes, common commands
+- `references/compose-patterns.md` - Dev patterns, override files, profiles, watch mode
+- `references/docker-in-docker-mounts.md` - Rootless dind bind-mount failures, build-context
+  vs bind-mount, .dockerignore gotchas, CI patterns, dind version pinning
