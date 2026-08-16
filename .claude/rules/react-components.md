@@ -21,9 +21,23 @@ import { Button } from "@/components/ui/button"
 <Button variant="destructive" onClick={onDelete}>Delete</Button>
 ```
 
-Only extract a wrapper in `components/custom/` when multiple call sites share the
-same non-trivial behavior (e.g. a button that always renders a loading spinner).
-Don't wrap by default.
+Only extract a wrapper when multiple call sites share the same non-trivial behavior
+(e.g. a button that always renders a loading spinner). Don't wrap by default.
+
+Extracted ones live in `components/patterns/`, grouped by what they are:
+
+```
+components/
+  ui/                    shadcn registry — regenerable, don't hand-edit
+  patterns/
+    input/               things you type into or choose from (Autocomplete, …)
+    display/             things that present data (StripPanel, …)
+  <Feature>/             feature-bound components
+```
+
+`patterns/`, not `custom/`: the folder holds reusable compositions OF `ui/` primitives,
+which is what a design system calls a pattern — and `ui/` already owns the word primitive.
+Group on the second file of a kind, not the first; a folder per component is noise.
 
 ## React 19 Patterns
 
