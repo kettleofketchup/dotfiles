@@ -1,6 +1,6 @@
 ---
 name: rook-ceph
-description: Multi-node Rook Ceph on Kubernetes. Use when deploying Ceph storage via Helm (Rook operator, CephCluster) with HA settings: 3 mons, 2 mgrs, replication size 3, host failure domains.
+description: 'Multi-node Rook Ceph on Kubernetes. Use when deploying Ceph storage via Helm (Rook operator, CephCluster) with HA settings: 3 mons, 2 mgrs, replication size 3, host failure domains.'
 ---
 
 # Rook Ceph Multi-Node

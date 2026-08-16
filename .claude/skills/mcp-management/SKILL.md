@@ -1,6 +1,6 @@
 ---
 name: mcp-management
-description: Manage MCP servers: discover and execute tools/prompts/resources, filter by task, multi-server orchestration. Use for MCP integrations, capability discovery, or MCP client workflows.
+description: 'Manage MCP servers: discover and execute tools/prompts/resources, filter by task, multi-server orchestration. Use for MCP integrations, capability discovery, or MCP client workflows.'
 ---
 
 # MCP Management

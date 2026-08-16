@@ -1,6 +1,6 @@
 ---
 name: mkdocs-documentation
-description: MkDocs Material documentation. Use when writing or validating docs/ content: admonitions, Mermaid, code annotations, include-markdown, navigation, and Claude skill/agent docs in docs/dev/ai/.
+description: 'MkDocs Material documentation. Use when writing or validating docs/ content: admonitions, Mermaid, code annotations, include-markdown, navigation, and Claude skill/agent docs in docs/dev/ai/.'
 ---
 
 # MkDocs Material Documentation
