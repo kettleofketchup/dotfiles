@@ -48,10 +48,19 @@ cannot hold colon-space. Quote the whole value:
 description: 'Manage MCP servers: discover and execute tools.'
 ```
 
-## `.claude/skills/gstack` is a gitlink with no `.gitmodules`
+## `.claude/skills/gstack` is a submodule, and 53 skills point into it
 
-Git records it at mode 160000 but there is no submodule mapping, so a fresh clone
-gets an **empty directory**. 55 skills are absolute symlinks into it
-(`/home/kettle/dotfiles/.claude/skills/gstack/...`) and therefore resolve only on
-the machine this repo lives at that exact path. Upstream is
-<https://github.com/garrytan/gstack>.
+Clone with `--recurse-submodules`, or the 53 skills whose `SKILL.md` is a symlink
+into `gstack/` become dangling links and disappear without an error:
+
+```bash
+git clone --recurse-submodules https://github.com/kettleofketchup/dotfiles.git
+git submodule update --init    # after an ordinary clone
+```
+
+Those symlinks are **relative** (`../gstack/<name>/SKILL.md`) and must stay that way.
+They were absolute into `/home/kettle/dotfiles/...` until 2026-08-16, which meant they
+resolved on exactly one machine at exactly one path.
+
+`.claude/skills/omarchy` is still an absolute symlink, into a machine-local Omarchy
+install. It is expected to dangle anywhere else.

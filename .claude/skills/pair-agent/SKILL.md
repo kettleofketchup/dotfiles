@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/pair-agent/SKILL.md
+../gstack/pair-agent/SKILL.md

@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/document-release/SKILL.md
+../gstack/document-release/SKILL.md

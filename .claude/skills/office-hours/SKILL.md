@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/office-hours/SKILL.md
+../gstack/office-hours/SKILL.md

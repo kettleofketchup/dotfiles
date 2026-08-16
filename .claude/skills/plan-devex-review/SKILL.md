@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/plan-devex-review/SKILL.md
+../gstack/plan-devex-review/SKILL.md

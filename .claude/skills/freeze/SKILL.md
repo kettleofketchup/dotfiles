@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/freeze/SKILL.md
+../gstack/freeze/SKILL.md

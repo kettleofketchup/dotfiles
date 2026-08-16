@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/plan-tune/SKILL.md
+../gstack/plan-tune/SKILL.md

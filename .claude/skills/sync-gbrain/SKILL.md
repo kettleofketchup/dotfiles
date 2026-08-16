@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/sync-gbrain/SKILL.md
+../gstack/sync-gbrain/SKILL.md

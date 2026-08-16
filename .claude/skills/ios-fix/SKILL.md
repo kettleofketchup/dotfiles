@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/ios-fix/SKILL.md
+../gstack/ios-fix/SKILL.md

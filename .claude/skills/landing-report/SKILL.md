@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/landing-report/SKILL.md
+../gstack/landing-report/SKILL.md

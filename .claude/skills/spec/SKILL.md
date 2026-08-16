@@ -1,1 +1,1 @@
-/home/kettle/dotfiles/.claude/skills/gstack/spec/SKILL.md
+../gstack/spec/SKILL.md
