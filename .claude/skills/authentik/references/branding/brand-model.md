@@ -48,8 +48,7 @@ attributes:
 - **Format**: SVG preferred (scalable, supports theme variants)
 - **Logo aspect ratio**: ~7:1 for wordmarks, 1:1 for icon-only
 - **Favicon**: Square, 32x32 or 48x48 recommended
-- Remove fixed `width`/`height` from SVGs; use `viewBox` for responsive scaling
-- Trim excess whitespace from SVG `viewBox`
+- Remove fixed `width`/`height` from SVGs and trim excess `viewBox` whitespace
 - **Theme variants**: Use `%(theme)s` in path — resolves to `light` or `dark`
   - Example: `/static/dist/assets/icons/icon_%(theme)s.svg`
   - Provide both `icon_light.svg` and `icon_dark.svg`
@@ -57,7 +56,10 @@ attributes:
 ## Serving Custom Assets
 
 ### Via Media Storage
-Upload through Admin UI (System > Brands > edit). Files stored in media directory.
+Upload through Admin UI (System > Brands > edit). On the default `file` backend the media
+dir is per-pod and ephemeral, so a multi-replica deploy needs an RWX volume or the S3
+backend first — otherwise the upload hits one pod and is lost on restart. Imperative
+state, too: no blueprint can reproduce it.
 
 ### Via Static Files (Kubernetes)
 Mount custom assets into the server pod:
@@ -74,28 +76,28 @@ server:
       readOnly: true
 ```
 
-Reference in brand: `/static/custom-assets/logo.svg`
+Reference in brand: `/static/dist/custom-assets/logo.svg`
+
+**The `dist` segment is required** — `/static/custom-assets/...` 404s (verified 2026.5.5),
+failing silently as a broken image. `/static/dist/` maps to `/web/dist/` and is a plain
+directory server, not a staticfiles manifest, so any file under the mount is served with no
+collectstatic step. Mount a NEW subdir: a ConfigMap volume replaces the directory it lands
+on, so `/web/dist/assets/images` would hide authentik's own stock images.
 
 ### Via External URL
-Point `branding_logo` and `branding_favicon` to external URLs (CDN, S3, etc.).
+Point `branding_logo`/`branding_favicon` at a CDN or S3 URL. Weigh this carefully: it makes
+the login page depend on an external host at render time.
 
 ## Flow Background Customization
 
 Background set at brand level; per-flow overrides possible via `authentik_flows.flow` `background` field.
 
-### Background as CSS value
-The background field accepts CSS values directly:
+### Background as CSS value or image URL
+The field takes either a CSS value or a path:
 ```yaml
-# Solid color
 branding_default_flow_background: "background-color: #1a1a2e"
-
-# Gradient
 branding_default_flow_background: "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-```
-
-### Background as image URL
-```yaml
-branding_default_flow_background: "/static/custom-assets/bg.jpg"
+branding_default_flow_background: "/static/dist/custom-assets/bg.jpg"
 ```
 
 ### Per-Flow Override
@@ -104,7 +106,7 @@ branding_default_flow_background: "/static/custom-assets/bg.jpg"
   identifiers:
     slug: my-login-flow
   attrs:
-    background: "/static/custom-assets/login-bg.jpg"
+    background: "/static/dist/custom-assets/login-bg.jpg"
 ```
 
 ## Flow Layout Options
