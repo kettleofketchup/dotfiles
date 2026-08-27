@@ -13,7 +13,11 @@ Brands control per-domain visual identity and flow routing. Model: `authentik_br
 | `branding_favicon` | file/URL | Browser tab icon |
 | `branding_custom_css` | text | Custom CSS injected into all pages (including ShadowDOM since 2025.4) |
 | `branding_default_flow_background` | file/URL | Default background image for flow executor |
+| `branding_map_tiles` | text | Vector tile source for the events map (2026.8+). XYZ template with `{z}`/`{x}`/`{y}`, or a `pmtiles://` archive URL. Empty = bundled hexworld basemap. **Served to unauthenticated clients — never put an API key here** |
 | `flow_authentication` | FK→flow | Authentication flow for this brand |
+| `flow_user_switch` | FK→flow | Flow for switching between signed-in accounts (2026.8+) |
+| `flow_request` | FK→flow | Flow for access requests / PAM (2026.8+) |
+| `flow_lockdown` | FK→flow | Flow used by account lockdown (2026.5+) |
 | `flow_invalidation` | FK→flow | Logout/session invalidation flow |
 | `flow_recovery` | FK→flow | Password recovery flow |
 | `flow_unenrollment` | FK→flow | Account removal flow |

@@ -31,6 +31,14 @@ redis:
 
 **Generate secret key:** `openssl rand -base64 32`
 
+Set the external base URL — optional in 2026.8, **required from 2026.11**:
+
+```yaml
+authentik:
+  web:
+    base_url: "https://auth.example.com"   # AUTHENTIK_WEB__BASE_URL
+```
+
 ## Production Values (Traefik + ArgoCD)
 
 ```yaml
@@ -85,7 +93,7 @@ spec:
   sources:
     - repoURL: https://charts.goauthentik.io
       chart: authentik
-      targetRevision: "2025.*"
+      targetRevision: "2026.*"
       helm:
         valueFiles:
           - $values/apps/authentik/values.yaml
@@ -123,6 +131,23 @@ spec:
           port: 80
 ```
 
+## Upgrading
+
+```bash
+helm repo update
+helm upgrade authentik authentik/authentik -f values.yaml --version ^2026.8
+```
+
+- **Outpost versions must match the server version.** Upgrade standalone
+  outposts at the same time; embedded outposts follow the server automatically.
+- **Do not skip release lines.** Lifecycle tooling in 2026.8 blocks unsupported
+  version skips — step through `2026.2 → 2026.5 → 2026.8`.
+- Release cadence is three months as of 2026.2.
+
+For the 2026.x breaking changes that affect blueprints and configuration
+(`meta_hide`, `user.groups`, listen defaults, `CONN_OPTIONS`, `hash_password`),
+see [releases-2026.md](releases-2026.md).
+
 ## Post-Install
 
 1. Navigate to `https://auth.example.com/if/flow/initial-setup/`
@@ -131,4 +156,8 @@ spec:
 
 ## Environment Variables
 
-For the complete environment variable reference (PostgreSQL, Redis, email, storage, web/worker tuning, cache, listen addresses, airgapped settings), see [configuration.md](configuration.md).
+For the complete environment variable reference, see
+[configuration-core.md](configuration-core.md) (core, PostgreSQL, cache, email,
+listen addresses, web/worker tuning) and
+[configuration-storage.md](configuration-storage.md) (storage, outposts,
+security, airgapped settings).
