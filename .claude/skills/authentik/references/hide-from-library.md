@@ -2,9 +2,9 @@
 
 ## TL;DR
 
-To hide an application's tile from the user's Application Dashboard
-(named "My Applications" before 2026.5) **without** changing its policies
-or removing it, set `meta_hide: true` on the application.
+To hide an application's tile from the Application Dashboard ("My Applications"
+before 2026.5) **without** changing its policies or removing it, set
+`meta_hide: true`.
 
 ```yaml
 - model: authentik_core.application
@@ -22,27 +22,21 @@ UI label: **Hide from Application Dashboard** (Applications → edit → the
 
 ## Version note: this replaced the `blank://blank` hack in 2026.5
 
-Before 2026.5 there was no dedicated field, and the documented workaround was
-to set `meta_launch_url: "blank://blank"` — a sentinel URL that the frontend
-special-cased into "don't render a tile".
+Before 2026.5 the only mechanism was `meta_launch_url: "blank://blank"` — a
+sentinel URL the frontend special-cased into "don't render a tile". 2026.5
+added the real `meta_hide` boolean and **auto-migrates existing `blank://blank`
+apps to `meta_hide: true` on upgrade**.
 
-2026.5 added the real `meta_hide` boolean. **Existing applications using
-`blank://blank` are automatically migrated to `meta_hide: true` on upgrade**,
-so nothing breaks. But blueprints are reconciled continuously: a blueprint
-that still writes `meta_launch_url: "blank://blank"` will keep writing that
-value back after the migration. Update the blueprints, don't rely on the
-migration.
+Blueprints are reconciled continuously, though: one that still writes
+`blank://blank` keeps overwriting the migrated value. Update the blueprint —
+don't rely on the migration.
 
-If you are stuck on a pre-2026.5 release, the old rules still apply:
+On pre-2026.5 the old rule still applies: the literal must be `blank://blank`,
+**not** `blank://` — the URL validator rejects schemes without an authority
+part, failing with `Serializer errors {'meta_launch_url': ['Enter a valid URL.']}`.
 
-> The literal value is `blank://blank` — **NOT** `blank://`. Authentik's URL
-> validator rejects schemes without an authority part, so `blank://` alone
-> fails the serializer and the blueprint apply errors with:
-> `Serializer errors {'meta_launch_url': ['Enter a valid URL.']}`
-
-On 2026.5+, `meta_hide` and `meta_launch_url` are independent: you can hide a
-tile while keeping a real launch URL, which is useful when something else
-(a bookmark, another app's link) deep-links into the app.
+On 2026.5+, `meta_hide` and `meta_launch_url` are independent — you can hide a
+tile while keeping a real launch URL for deep links from elsewhere.
 
 ## When to use
 
@@ -50,11 +44,10 @@ The most common case is **forward-auth proxy providers that duplicate an
 existing user-facing application**.
 
 For example: Grafana has both a SAML provider (the real "Sign in with
-Authentik" entry) and a forward-auth proxy provider (middleware that
-gates the ingress). Both need an `authentik_core.application` row, but
-the user only ever clicks the SAML one. The proxy-provider Application
-exists purely to wire the provider into the embedded outpost — its tile
-in the dashboard is noise.
+Authentik" entry) and a forward-auth proxy provider (middleware gating the
+ingress). Both need an `authentik_core.application` row, but the user only ever
+clicks the SAML one — the proxy Application exists purely to wire the provider
+into the embedded outpost, so its tile is noise.
 
 | App pattern | Hide? | Why |
 |---|---|---|
@@ -62,9 +55,9 @@ in the dashboard is noise.
 | Forward-auth proxy that duplicates an OIDC/SAML app | **Yes** — `meta_hide: true` | Middleware-only; the OIDC/SAML entry is the user's click target |
 | Forward-auth proxy that IS the user-facing app (no separate OIDC/SAML) | **No** — `meta_launch_url: https://app.<base>` | The proxy entry is the only entry; users find the app here |
 
-A useful naming convention: hidden duplicates get the suffix
-`<DisplayName> Access` (e.g. "Grafana Access"), visible user-facing
-proxies get a clean human name (e.g. "Files", "Models").
+Naming convention: hidden duplicates get the suffix `<DisplayName> Access`
+(e.g. "Grafana Access"); visible user-facing proxies get a clean human name
+(e.g. "Files", "Models").
 
 ## Blueprint pattern
 
@@ -135,21 +128,9 @@ block-scoped variable in Go templates):
     policy_engine_mode: any
 ```
 
-**Gotcha:** when including this helper from a parent template, the dict
-constructor must explicitly pass `hide` through, otherwise `hasKey`
-inside the helper is always false and everything ends up hidden:
-
-```gotemplate
-{{- range .Values.providers }}
-{{ include "proxy-providers.entry" (dict
-    "name" .name
-    "displayName" .displayName
-    "subdomain" .subdomain
-    "baseDomain" $.Values.global.baseDomain
-    "groups" .groups
-    "hide" .hide) | indent 6 }}
-{{- end }}
-```
+**Gotcha:** the parent template's `dict` constructor must pass `hide` through
+explicitly (`"hide" .hide`), otherwise `hasKey` inside the helper is always
+false and everything ends up hidden.
 
 ## Verifying
 
@@ -162,9 +143,7 @@ After the blueprint applies, check in the Admin UI:
 
 Two failure modes:
 
-- Blueprint reports `Enter a valid URL` on `meta_launch_url` → the template is
-  emitting `blank://` instead of `blank://blank`. Pre-2026.5 only; on 2026.5+
-  switch to `meta_hide` and drop the sentinel.
-- Tile reappears after an upgrade → a blueprint is still writing
-  `meta_launch_url: "blank://blank"` and overwriting the migrated `meta_hide`.
-  Update the blueprint.
+- `Enter a valid URL` on `meta_launch_url` → the template emits `blank://`
+  instead of `blank://blank`. Pre-2026.5 only; on 2026.5+ use `meta_hide`.
+- Tile reappears after an upgrade → a blueprint still writes `blank://blank`,
+  overwriting the migrated `meta_hide`. Update the blueprint.

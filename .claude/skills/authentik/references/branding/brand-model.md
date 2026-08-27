@@ -1,6 +1,6 @@
 # Brand Model Reference
 
-Brands control per-domain visual identity and flow routing. Model: `authentik_brands.brand` (renamed from `authentik_tenants.tenant` in 2024.2+).
+Per-domain visual identity and flow routing. Model: `authentik_brands.brand` (renamed from `authentik_tenants.tenant` in 2024.2+).
 
 ## Brand Fields
 
@@ -13,7 +13,7 @@ Brands control per-domain visual identity and flow routing. Model: `authentik_br
 | `branding_favicon` | file/URL | Browser tab icon |
 | `branding_custom_css` | text | Custom CSS injected into all pages (including ShadowDOM since 2025.4) |
 | `branding_default_flow_background` | file/URL | Default background image for flow executor |
-| `branding_map_tiles` | text | Vector tile source for the events map (2026.8+). XYZ template with `{z}`/`{x}`/`{y}`, or a `pmtiles://` archive URL. Empty = bundled hexworld basemap. **Served to unauthenticated clients — never put an API key here** |
+| `branding_map_tiles` | text | Events-map vector tiles (2026.8+): XYZ template with `{z}`/`{x}`/`{y}`, or `pmtiles://` URL. Empty = bundled offline basemap. **Served to unauthenticated clients — no API keys** |
 | `flow_authentication` | FK→flow | Authentication flow for this brand |
 | `flow_user_switch` | FK→flow | Flow for switching between signed-in accounts (2026.8+) |
 | `flow_request` | FK→flow | Flow for access requests / PAM (2026.8+) |
@@ -38,7 +38,7 @@ attributes:
     locale: en           # Language code
     default_user_display: username  # username | name | email
     layout:
-      type: row          # row | 2-column | 3-column (My Applications page)
+      type: row          # row | 2-column | 3-column (Application Dashboard)
     search: true         # Show search bar
     sidebar:
       api_drawer: true   # API Drawer toggle
@@ -53,9 +53,8 @@ attributes:
 - **Logo aspect ratio**: ~7:1 for wordmarks, 1:1 for icon-only
 - **Favicon**: Square, 32x32 or 48x48 recommended
 - Remove fixed `width`/`height` from SVGs and trim excess `viewBox` whitespace
-- **Theme variants**: Use `%(theme)s` in path — resolves to `light` or `dark`
-  - Example: `/static/dist/assets/icons/icon_%(theme)s.svg`
-  - Provide both `icon_light.svg` and `icon_dark.svg`
+- **Theme variants**: `%(theme)s` in the path resolves to `light`/`dark` — e.g.
+  `/static/dist/assets/icons/icon_%(theme)s.svg`; provide both files
 
 ## Serving Custom Assets
 
