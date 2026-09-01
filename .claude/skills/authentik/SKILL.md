@@ -22,7 +22,7 @@ changed several things this skill previously documented differently:
 | `AUTHENTIK_WEB__BASE_URL` | 2026.8 | Optional now, **required from 2026.11** |
 | `AUTHENTIK_POSTGRESQL__DIRECT__*` for transaction-mode poolers | 2026.8 | Proper PgBouncer support |
 | Listen default `0.0.0.0` → `[::]` | 2026.5 | IPv4-only clusters must set it back |
-| Proxy outpost rewritten Go → Rust | 2026.8 | 1-to-1 functional match; endpoints and headers unchanged |
+| Proxy outpost rewritten Go → Rust | 2026.8 | 1-to-1 functional match; endpoints and headers unchanged — so a `/auth/nginx` 500 is **not** a 2026.8 regression, don't chase it as one |
 
 ## Quick Start
 
@@ -75,6 +75,15 @@ Protect apps behind Traefik using Authentik proxy provider outpost.
   `access_token_validity` (bounded above by `refresh_token_validity`, and equal to the
   group-revocation lag) plus a second middleware on `/auth/nginx` (401, no redirect)
   selected by `Sec-Fetch-Mode`.
+- **`/auth/nginx` is not a drop-in for Traefik's `forwardAuth`.** It derives the request
+  URL from `X-Original-URL` **only**, and Traefik sends `X-Forwarded-Proto/Host/Uri` and
+  has no setting that emits it. A bare `forwardAuth` pointed at it returns **500 on every
+  request** (`failed to detect a forward URL from nginx`), which Traefik forwards verbatim
+  with the backend never contacted — blank SPAs, working navigation, no auth error in the
+  console. Compose a `headers` middleware injecting `X-Original-URL` with the `forwardAuth`
+  via a `chain`. Full recipe, plus the ArgoCD `Replace=true` needed when converting an
+  existing middleware to a chain, in
+  [forward-auth-xhr-cors.md](references/forward-auth-xhr-cors.md).
 
 ### Hiding Applications from the Application Dashboard
 Set `meta_hide: true` to hide a proxy-provider Application's tile without changing its policies (UI label: **Hide from Application Dashboard**; "My Applications" was renamed the Application Dashboard in 2026.5). Hide forward-auth proxies that **duplicate** an existing OIDC/SAML user-facing app; keep visible (with a real launch URL) for proxies that ARE the only user-facing entry.
@@ -157,7 +166,7 @@ Custom attribute statements and access control.
 | OIDC Discovery | `/application/o/<slug>/.well-known/openid-configuration` |
 | OAuth2 DCR (2026.8+) | `/application/o/register/` (see provider's `dcr_registration`) |
 | Forward auth (Traefik) | `/outpost.goauthentik.io/auth/traefik` |
-| Forward auth (nginx/XHR) | `/outpost.goauthentik.io/auth/nginx` |
+| Forward auth (nginx/XHR) | `/outpost.goauthentik.io/auth/nginx` — **requires `X-Original-URL`**, else 500 |
 | Outpost health | `outpost:9300/metrics` |
 
 ## Release Notes

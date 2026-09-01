@@ -109,18 +109,88 @@ correctness one — set it by revocation tolerance, not by how annoying the laps
 
 The outpost serves two forward-auth endpoints:
 
-| Endpoint | Unauthenticated response | Use for |
-|---|---|---|
-| `/outpost.goauthentik.io/auth/traefik` | `302` to the authorize flow | document navigation |
-| `/outpost.goauthentik.io/auth/nginx` | `401`, no `Location` | XHR / SSE / WebSocket |
+| Endpoint | Derives the request URL from | Unauthenticated response | Use for |
+|---|---|---|---|
+| `/outpost.goauthentik.io/auth/traefik` | `X-Forwarded-Proto` + `-Host` + `-Uri` | `302` to the authorize flow | document navigation |
+| `/outpost.goauthentik.io/auth/nginx` | `X-Original-URL` **only** | `401`, no `Location` | XHR / SSE / WebSocket |
 
-`/auth/nginx` is named for nginx's `auth_request`, which needs a 401 to drive
-`error_page 401`. **Nothing about it is nginx-specific** — Traefik consumes it fine and
-no nginx need exist. Do not "correct" it back.
+**`/auth/nginx` is not a drop-in for Traefik.** The 401 is exactly what you want, but the
+endpoint derives the request URL from `X-Original-URL` and nothing else. Traefik's
+`forwardAuth` sends `X-Forwarded-Proto/Host/Uri` and has no setting that emits
+`X-Original-URL`, so aiming a bare `forwardAuth` at it hard-fails **every** request:
 
-Define both middlewares, then select per request kind. Split on `Sec-Fetch-Mode`, **not**
-on a path prefix: an app's XHR surface is rarely enumerable, and a missed path silently
-reintroduces the wedge on exactly the endpoint nobody thought of.
+```
+src/outpost/proxy/events.rs:24  level=error
+configuration error: Outpost authentik Embedded Outpost (Provider <app>-proxy)
+  failed to detect a forward URL from nginx
+```
+
+That is an HTTP **500**, and Traefik forwards a non-2xx forwardAuth response verbatim, so
+the client gets the 500 with the backend never contacted. See "The 500 trap" below — it is
+the single most likely way to get this wrong, and the resulting config *looks* correct.
+
+Do not reach for `X-Original-URI` (the other spelling): it was removed deliberately as a
+**security fix** in 2025.12.5 / 2026.2.3 and is now ignored.
+
+Inject the header with a `headers` middleware and compose the two with a `chain`, so the
+public middleware name stays stable and app IngressRoutes need no edit:
+
+```yaml
+# 1. the header the nginx endpoint requires
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata: {name: authentik-original-url, namespace: authentik}
+spec:
+  headers:
+    customRequestHeaders:
+      X-Original-URL: https://forward-auth.invalid/   # constant — see below
+---
+# 2. the real forwardAuth (not referenced directly)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata: {name: authentik-forwardauth-api-auth, namespace: authentik}
+spec:
+  forwardAuth:
+    address: http://authentik-server.authentik.svc.cluster.local/outpost.goauthentik.io/auth/nginx
+    trustForwardHeader: true
+    authResponseHeaders: [X-authentik-username, X-authentik-groups, X-authentik-email,
+                          X-authentik-name, X-authentik-uid, X-authentik-jwt]
+---
+# 3. what routers actually reference. Order matters: the header must be on the request
+#    before forwardAuth copies the headers into its auth sub-request.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: authentik-forwardauth-api
+  namespace: authentik
+  annotations:
+    argocd.argoproj.io/sync-options: Replace=true   # see "The type-change trap"
+spec:
+  chain:
+    middlewares:
+      - {name: authentik-original-url, namespace: authentik}
+      - {name: authentik-forwardauth-api-auth, namespace: authentik}
+```
+
+**Why a constant is safe.** The provider is looked up by `X-Forwarded-Host` — which
+Traefik already sends correctly per-request — *not* by the host inside `X-Original-URL`.
+Verified against 2026.8.0 by the asymmetry:
+
+```
+X-Original-URL=<real app>         + X-Forwarded-Host=<no such provider> -> 404
+X-Original-URL=<no such provider> + X-Forwarded-Host=<real app>         -> 401
+```
+
+`X-Original-URL` only has to exist and parse; it is never used for a redirect here because
+this path answers 401 and never 302. One shared value therefore serves every app, and
+`headers.customRequestHeaders` could not interpolate the real per-request URL anyway — it
+sets static values only. Two caveats: if a provider sets `skip_path_regex`, that regex is
+matched against this URL, so a constant will mis-evaluate it; and if authentik ever starts
+keying **authorization** on `X-Original-URL`, this must become one middleware per provider.
+
+Then select per request kind. Split on `Sec-Fetch-Mode`, **not** on a path prefix: an
+app's XHR surface is rarely enumerable, and a missed path silently reintroduces the wedge
+on exactly the endpoint nobody thought of.
 
 ```yaml
 - match: Host(`app.example.com`) && HeaderRegexp(`Sec-Fetch-Mode`, `^(cors|same-origin|websocket)$`)
@@ -139,6 +209,72 @@ provider, same bindings). Only the failure mode differs. Omit `no-cors` so
 
 Send navigation to the **401** middleware and users get a bare 401 page instead of a
 login prompt. Keep the two routes' `authResponseHeaders` lists in step.
+
+**This route is not only "API calls".** A Vite/ESM SPA's own entry bundle is a
+`<script type="module">`, which fetches with `Sec-Fetch-Mode: cors` — so the JS bundle
+takes the API route while `<link rel=stylesheet>` (`no-cors`) takes the navigation one.
+Break the API route and the page serves its CSS and nothing else: a blank white render
+with no console auth error, which reads as a frontend bug, not an auth one.
+
+## The 500 trap
+
+The most likely way to get this wrong, because the config *looks* right and the failure
+is silent on navigation. Symptoms:
+
+- Every `Sec-Fetch-Mode: cors` request returns **500** on every forward-auth app at once.
+- SPAs render blank; navigation and login still work perfectly.
+- The app serves 200 when curled from inside its own pod.
+
+Traefik's access log is the tell — the backend was never contacted:
+
+```
+DownstreamStatus: 500,  OriginStatus: 0,  OriginDuration: 0,  Overhead == Duration
+```
+
+Reproduce without a browser, from anywhere in-cluster:
+
+```bash
+kubectl -n <ns> exec deploy/<app> -- wget -S -qO- \
+  --header="X-Forwarded-Host: <host>" --header="X-Forwarded-Proto: https" \
+  --header="X-Forwarded-Uri: /" \
+  http://authentik-server.authentik.svc.cluster.local/outpost.goauthentik.io/auth/nginx
+# 500 + "failed to detect a forward URL from nginx"  -> X-Original-URL is missing
+```
+
+Do **not** chase this as a version regression. `/auth/nginx` has never accepted
+`X-Forwarded-*` — that is precisely why `xabinapal/traefik-authentik-forward-plugin`
+exists to bridge the two. Upgrading and downgrading are equally dead ends. (That plugin is
+the other valid fix, and adds per-path 401/302/skip; but Traefik plugins are Yaegi source
+fetched from GitHub at startup, so an **airgapped** cluster must vendor it into the image
+via `experimental.localPlugins`. The chain above needs no plugin.)
+
+## The type-change trap
+
+Adding the chain means changing an **existing** middleware's type (`forwardAuth` →
+`chain`). On any cluster that already has the old object, a merge apply keeps the stale
+stanza next to the new one, and Traefik rejects the union outright:
+
+```
+ERR error="cannot create middleware: multi-types middleware not supported,
+    consider declaring two different pieces of middleware instead"
+    routerName=<app>-...  entryPointName=websecure
+```
+
+Traefik does not error the request — it **drops the router**, so traffic falls through to
+whatever lower-priority route matches. Here that is the navigation route, so cors requests
+answer `302` instead of the intended `401` and the fix looks half-applied rather than
+broken. Nothing in the app's own logs mentions it.
+
+- Check: `kubectl -n authentik get middleware <n> -o jsonpath='{.spec}'` must show exactly
+  one top-level key.
+- Recover: delete the object and let the GitOps controller recreate it clean.
+- Prevent: `argocd.argoproj.io/sync-options: Replace=true` on the manifest (shown above),
+  which replaces rather than merges so removed fields are actually pruned.
+
+Objects **adopted** by ArgoCD after being created by something else (a bootstrap
+`kubectl apply`, a Helm install) are the exposed case: with no
+`kubectl.kubernetes.io/last-applied-configuration` to diff against, the apply cannot know
+a field was removed. Not Middleware-specific — Middlewares just fail loudest.
 
 ## Notes
 
