@@ -95,11 +95,31 @@ metadata:
 
 | Option | Description |
 |--------|-------------|
-| `Prune=false` | Never delete this resource |
+| `Prune=false` | Never delete this resource — **only while the chart still renders it**; see the caveat below |
 | `Delete=false` | Keep on app deletion |
 | `Validate=false` | Skip validation |
 | `Replace=true` | Use kubectl replace |
 | `ServerSideApply=true` | Server-side apply |
+
+### `Prune=false` does not protect a resource the chart stopped rendering
+
+ArgoCD decides what to prune from the Application's `.status.resources` list
+carried over from the previous sync — **not** from the live object's
+annotations. A resource that was rendered once and then removed from the chart
+stays in that list with `requiresPruning: true`, and the next sync deletes it
+even though the live object carries `Prune=false`, `IgnoreExtraneous`, and no
+`argocd.argoproj.io/tracking-id`.
+
+Stripping the tracking annotation is the commonly cited fix and **does not
+work** for this reason. Verify with:
+
+```bash
+kubectl -n argocd get app <app> -o json \
+  | jq '.status.resources[] | select(.requiresPruning == true)'
+```
+
+If the resource is listed there, it is going to be deleted on the next sync,
+whatever its annotations say.
 
 ## Automated Sync Policy
 
