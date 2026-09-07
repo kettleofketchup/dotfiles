@@ -22,6 +22,25 @@ import sys
 # Matches "pre-existing", "preexisting", "pre existing" (any case).
 PATTERN = re.compile(r"pre[-\s]?existing", re.IGNORECASE)
 
+# Only PROSE counts. Three things are stripped before matching, because each is a
+# reference to the word rather than a use of it:
+#   - fenced code blocks and inline code spans (quoted diffs, commit messages,
+#     file contents Claude is showing the user)
+#   - this hook's own filename, whose "preexisting" substring made every message
+#     that so much as NAMED the file trigger it -- including the message reporting
+#     on the hook itself, which made the rule impossible to discuss without
+#     tripping it.
+FENCED = re.compile(r"```.*?```", re.DOTALL)
+INLINE_CODE = re.compile(r"`[^`\n]*`")
+SELF_REFERENCE = re.compile(r"pre[-\s]?existing[-_]nudge(?:\.py)?", re.IGNORECASE)
+
+
+def prose_only(text):
+    """Drop code spans and self-references so only real prose is matched."""
+    text = FENCED.sub(" ", text)
+    text = INLINE_CODE.sub(" ", text)
+    return SELF_REFERENCE.sub(" ", text)
+
 REASON = (
     'You called something "pre-existing". That is almost never a reason to '
     "leave it alone — pre-existing does NOT mean it does not matter. Re-examine "
@@ -75,7 +94,7 @@ def main():
         sys.exit(0)
 
     text = last_assistant_text(payload.get("transcript_path", ""))
-    if not text or not PATTERN.search(text):
+    if not text or not PATTERN.search(prose_only(text)):
         sys.exit(0)
 
     json.dump({"decision": "block", "reason": REASON}, sys.stdout)
