@@ -47,6 +47,22 @@ assert() { local n="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$n"; else bad 
 # refute NAME COMMAND...  -> passes when COMMAND fails
 refute() { local n="$1"; shift; if "$@" >/dev/null 2>&1; then bad "$n"; else ok "$n"; fi; }
 
+# sbx_denied NAME <sbx run args...>
+# Passes ONLY when the sandboxed operation fails AND the failure is a genuine
+# denial rather than an sbx/engine malfunction.
+sbx_denied() {
+  local n="$1"; shift
+  local out rc
+  out="$(sbx run "$@" 2>&1)"; rc=$?
+  if [[ "$rc" -eq 0 ]]; then
+    bad "$n (operation SUCCEEDED - not sandboxed)"
+  elif grep -qiE 'permission denied|read-only file system|operation not permitted|bad address|network is unreachable|could not resolve|temporary failure in name resolution|name does not resolve' <<<"$out"; then
+    ok "$n"
+  else
+    bad "$n (inconclusive - sbx or engine error, not a denial: $(head -c 120 <<<"$out" | tr '\n' ' '))"
+  fi
+}
+
 sect "Host privilege"
 refute "no root dockerd running"            pgrep -u root -x dockerd
 refute "user is not in the docker group"    sh -c 'id -nG | grep -qw docker'
@@ -69,7 +85,7 @@ contained "privileged still cannot write host root" --privileged -v /:/host "$IM
 contained "cannot list root-owned /root"            -v /:/host:ro "$IMG" ls /host/root
 
 sect "Storage and runtime"
-if command -v podman >/dev/null 2>&1; then
+if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
   assert "storage driver is native overlay" \
     sh -c "podman info --format '{{.Store.GraphDriverName}}' | grep -qx overlay"
   refute "not falling back to fuse-overlayfs" \
@@ -77,9 +93,9 @@ if command -v podman >/dev/null 2>&1; then
   assert "default runtime is crun" \
     sh -c "podman info --format '{{.Host.OCIRuntime.Name}}' | grep -qx crun"
 else
-  skip "storage driver is native overlay (podman not installed - NOT TESTED)"
-  skip "not falling back to fuse-overlayfs (podman not installed - NOT TESTED)"
-  skip "default runtime is crun (podman not installed - NOT TESTED)"
+  skip "storage driver is native overlay (podman not installed or unreachable - NOT TESTED)"
+  skip "not falling back to fuse-overlayfs (podman not installed or unreachable - NOT TESTED)"
+  skip "default runtime is crun (podman not installed or unreachable - NOT TESTED)"
 fi
 
 sect "Compatibility"
@@ -102,10 +118,10 @@ fi
 sect "sbx sandbox profile"
 assert "sbx is executable"                 test -x "$HOME/bin/sbx"
 if [[ "$ENGINE_OK" -eq 1 && -x "$HOME/bin/sbx" ]]; then
-  refute "sbx denies network by default"     sbx run "$IMG" wget -q -T3 -O- https://example.com
+  sbx_denied "sbx denies network by default"  "$IMG" wget -q -T3 -O- https://example.com
   assert "sbx allows network with --net"     sbx run --net "$IMG" true
-  refute "sbx workdir is read-only"          sbx run "$IMG" touch /work/probe
-  refute "sbx rootfs is read-only"           sbx run "$IMG" touch /probe
+  sbx_denied "sbx workdir is read-only"       "$IMG" touch /work/probe
+  sbx_denied "sbx rootfs is read-only"        "$IMG" touch /probe
   assert "sbx tmpfs is writable"             sbx run "$IMG" sh -c 'echo ok > /tmp/x'
   assert "sbx runs as non-root"              sh -c "sbx run '$IMG' id -u | grep -qx 65534"
 else
