@@ -43,7 +43,7 @@ Two distinct risks were identified:
 | Unprivileged userns | enabled (`kernel.unprivileged_userns_clone=1`) |
 | `newuidmap`/`newgidmap` | present, `cap_setuid=ep` / `cap_setgid=ep` |
 | Idle daemon cost | dockerd 332 MB + containerd 194 MB + 94 MB RSS |
-| Private registry CAs | `/etc/docker/certs.d/{gitlab,registry.gitlab}.<internal-domain>/ca.crt` |
+| Private registry CAs | `/etc/docker/certs.d/<your-registry-hosts>/ca.crt` |
 | `docker build` | aliased to `docker buildx build` (buildx 0.36.1) |
 | cgroup delegation | v2, `cpu memory pids` delegated to user slice |
 | Linger | `Linger=no` |
