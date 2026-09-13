@@ -5,7 +5,6 @@ export EDITOR="nvim"
 export TERMINAL="ghostty"
 # export BROWSER="firefox"
 
-export PATH="$HOME/.docker/bin":$PATH
 # export PATH="$HOME/.local/nvim-macos-arm64/bin":$PATH
 export MANWIDTH=999
 export PATH=$PATH:/usr/local/go/bin
@@ -50,3 +49,7 @@ if ! command -v kettle >/dev/null 2>&1; then
 fi
 
 
+
+# Rootless podman exposes a Docker-compatible API socket; point Docker-API
+# clients (lazydocker, testcontainers, compose) at it.
+export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
