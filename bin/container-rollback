@@ -5,8 +5,21 @@ set -euo pipefail
 
 BACKUP="${BACKUP:-/home/kettle/docker-migration}"
 
+# Directory existence alone is not enough: an empty or partial backup would
+# restore a Docker with no registry CAs, which fails only later, at the first
+# private-registry pull. Check for the two things that must be there.
 if [[ ! -d "$BACKUP/etc-docker-backup" ]]; then
   echo "error: no backup at $BACKUP/etc-docker-backup" >&2
+  exit 1
+fi
+if [[ ! -f "$BACKUP/etc-docker-backup/daemon.json" ]]; then
+  echo "error: backup at $BACKUP/etc-docker-backup is incomplete: daemon.json missing" >&2
+  echo "       refusing to restore a partial /etc/docker" >&2
+  exit 1
+fi
+if [[ ! -d "$BACKUP/etc-docker-backup/certs.d" ]]; then
+  echo "error: backup at $BACKUP/etc-docker-backup is incomplete: certs.d/ missing" >&2
+  echo "       restoring without registry CAs would break private registry pulls" >&2
   exit 1
 fi
 
@@ -29,6 +42,12 @@ sudo sysctl --system >/dev/null
 echo "==> re-enabling the root daemon"
 sudo systemctl enable --now docker.socket
 
-echo "==> done. Remove DOCKER_HOST from .config/zsh/exports.zsh and restow:"
-echo "    git -C /home/kettle/dotfiles checkout -- .config/zsh/exports.zsh"
-echo "    stow -R -d /home/kettle/dotfiles -t /home/kettle ."
+echo "==> done. One manual step is left:"
+echo "    Delete the DOCKER_HOST export (and its comment) from"
+echo "      /home/kettle/dotfiles/.config/zsh/exports.zsh"
+echo "    by hand -- do not 'git checkout' that file, which would also discard"
+echo "    any unrelated uncommitted edits in it."
+echo "    Then drop the cached zinit snippet so the change is actually picked up:"
+echo "      rm -rf ~/.local/share/zinit/snippets/home--kettle--.config--zsh/exports.zsh"
+echo "    and restow:"
+echo "      stow -R -d /home/kettle/dotfiles -t /home/kettle ."

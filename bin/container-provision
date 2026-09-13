@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# container-provision — reproduce the rootless podman host setup on a new machine.
+# Idempotent. Dotfiles supply ~/.config/containers via stow; this covers the
+# host-level pieces only.
+# Spec: docs/superpowers/specs/2026-09-13-rootless-container-sandbox-design.md
+set -euo pipefail
+
+# Must run as the target user, not as root: the last step talks to *this* user's
+# systemd manager, and under sudo that would configure root's instead.
+if [[ "$EUID" -eq 0 ]]; then
+  echo "error: run this as your own user, not as root or under sudo." >&2
+  echo "       It calls sudo itself for the steps that need it, and the final" >&2
+  echo "       'systemctl --user' step must target your user manager." >&2
+  exit 1
+fi
+
+USER_NAME="$(id -un)"
+BACKUP_DIR="$HOME/docker-migration/etc-docker-backup"
+
+echo "==> stopping any root Docker daemon"
+sudo systemctl disable --now docker.socket docker.service 2>/dev/null || true
+
+echo "==> backing up /etc/docker to $BACKUP_DIR"
+if [[ -d "$BACKUP_DIR" ]]; then
+  echo "    backup already exists, leaving it untouched"
+elif [[ -d /etc/docker ]]; then
+  mkdir -p "$(dirname "$BACKUP_DIR")"
+  sudo mkdir -p "$BACKUP_DIR"
+  sudo cp -a /etc/docker/. "$BACKUP_DIR"/
+else
+  echo "    no /etc/docker on this machine, nothing to back up"
+fi
+
+echo "==> removing dead Docker daemon config"
+sudo rm -f /etc/docker/daemon.json /etc/docker/daemon.json.pacnew
+
+# ufw-docker exists only to work around root Docker bypassing ufw's INPUT chain;
+# rootless published ports are ordinary user sockets, so it is genuinely obsolete.
+# It must go first: it depends on `docker`, so pacman would otherwise refuse to
+# let podman-docker remove docker ("breaks dependency 'docker' required by ufw-docker").
+echo "==> removing obsolete ufw-docker"
+if pacman -Qq ufw-docker >/dev/null 2>&1; then
+  sudo pacman -Rns --noconfirm ufw-docker
+else
+  echo "    not installed, skipping"
+fi
+
+echo "==> installing the podman stack"
+sudo pacman -S --needed podman podman-docker podman-compose netavark aardvark-dns passt crun
+
+echo "==> subuid/subgid for $USER_NAME"
+grep -q "^${USER_NAME}:" /etc/subuid || echo "${USER_NAME}:100000:65536" | sudo tee -a /etc/subuid
+grep -q "^${USER_NAME}:" /etc/subgid || echo "${USER_NAME}:100000:65536" | sudo tee -a /etc/subgid
+
+echo "==> migrating registry CAs, if Docker left any"
+if [[ -d /etc/docker/certs.d ]]; then
+  sudo mkdir -p /etc/containers/certs.d
+  sudo cp -a /etc/docker/certs.d/. /etc/containers/certs.d/
+fi
+
+# 80, not 0: this satisfies the requirement (rootless containers can publish :80
+# and :443) while leaving :22 and :53 protected from unprivileged squatting.
+echo "==> permitting unprivileged low ports (>= 80)"
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-rootless-ports.conf >/dev/null
+sudo sysctl --system >/dev/null
+
+echo "==> linger and user socket"
+sudo loginctl enable-linger "$USER_NAME"
+systemctl --user enable --now podman.socket
+
+echo "==> done. Verify with: container-sandbox-verify"
