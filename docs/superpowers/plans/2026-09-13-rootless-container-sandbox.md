@@ -108,8 +108,21 @@ set -euo pipefail
 
 BACKUP="${BACKUP:-/home/kettle/docker-migration}"
 
+# Directory existence alone is not enough: an empty or partial backup would
+# restore a Docker with no registry CAs, which fails only later, at the first
+# private-registry pull. Check for the two things that must be there.
 if [[ ! -d "$BACKUP/etc-docker-backup" ]]; then
   echo "error: no backup at $BACKUP/etc-docker-backup" >&2
+  exit 1
+fi
+if [[ ! -f "$BACKUP/etc-docker-backup/daemon.json" ]]; then
+  echo "error: backup at $BACKUP/etc-docker-backup is incomplete: daemon.json missing" >&2
+  echo "       refusing to restore a partial /etc/docker" >&2
+  exit 1
+fi
+if [[ ! -d "$BACKUP/etc-docker-backup/certs.d" ]]; then
+  echo "error: backup at $BACKUP/etc-docker-backup is incomplete: certs.d/ missing" >&2
+  echo "       restoring without registry CAs would break private registry pulls" >&2
   exit 1
 fi
 
@@ -131,9 +144,15 @@ sudo sysctl --system >/dev/null
 echo "==> re-enabling the root daemon"
 sudo systemctl enable --now docker.socket
 
-echo "==> done. Remove DOCKER_HOST from .config/zsh/exports.zsh and restow:"
-echo "    git -C /home/kettle/dotfiles checkout -- .config/zsh/exports.zsh"
-echo "    stow -R -d /home/kettle/dotfiles -t /home/kettle ."
+echo "==> done. One manual step is left:"
+echo "    Delete the DOCKER_HOST export (and its comment) from"
+echo "      /home/kettle/dotfiles/.config/zsh/exports.zsh"
+echo "    by hand -- do not 'git checkout' that file, which would also discard"
+echo "    any unrelated uncommitted edits in it."
+echo "    Then drop the cached zinit snippet so the change is actually picked up:"
+echo "      rm -rf ~/.local/share/zinit/snippets/home--kettle--.config--zsh/exports.zsh"
+echo "    and restow:"
+echo "      stow -R -d /home/kettle/dotfiles -t /home/kettle ."
 ```
 
 - [ ] **Step 6: Verify the rollback script parses and is executable**
@@ -280,8 +299,10 @@ assert "<your-registry-host-1> CA installed" \
   test -f /etc/containers/certs.d/<your-registry-host-1>/ca.crt
 assert "<your-registry-host-2> CA installed" \
   test -f /etc/containers/certs.d/<your-registry-host-2>/ca.crt
-assert "unprivileged low ports permitted" \
-  sh -c "[ \"\$(sysctl -n net.ipv4.ip_unprivileged_port_start)\" = 0 ]"
+# <= 80 is the requirement: rootless containers must be able to publish :80 and
+# :443. We set 80 rather than 0 so :22 and :53 stay protected.
+assert "unprivileged low ports permitted (<= 80)" \
+  sh -c "[ \"\$(sysctl -n net.ipv4.ip_unprivileged_port_start)\" -le 80 ]"
 
 if [[ "${SKIP_NET:-0}" = 1 ]]; then
   skip "port 80 publish (SKIP_NET=1)"
@@ -363,11 +384,14 @@ systemctl is-active docker.socket docker.service; echo "(inactive expected)"
 
 - [ ] **Step 3: Install podman, removing docker**
 
+`ufw-docker` must come off first. It depends on `docker`, so pacman will not let `podman-docker` displace `docker` while it is installed — it refuses with `removing docker breaks dependency 'docker' required by ufw-docker`. Removing it is not a regression: it exists only to work around root Docker bypassing ufw's INPUT chain, and rootless published ports are ordinary user sockets that obey ufw already.
+
 ```bash
+pacman -Qq ufw-docker >/dev/null 2>&1 && sudo pacman -Rns ufw-docker
 sudo pacman -S --needed podman podman-docker podman-compose netavark aardvark-dns passt crun
 ```
 
-pacman will prompt to remove `docker` and `ufw-docker`, because `podman-docker` conflicts with `docker`. Accept. `docker-compose` and `lazydocker` have no hard dependency on `docker` and must remain — confirm they are absent from the removal list before accepting.
+pacman will then prompt to remove `docker`, because `podman-docker` conflicts with it. Accept. `docker-compose` and `lazydocker` have no hard dependency on `docker` and must remain — confirm they are absent from the removal list before accepting.
 
 - [ ] **Step 4: Verify the shim**
 
@@ -484,14 +508,16 @@ Expected: `active`, `Linger=yes`, `socket OK`.
 - [ ] **Step 2: Permit unprivileged low ports**
 
 ```bash
-echo 'net.ipv4.ip_unprivileged_port_start=0' | sudo tee /etc/sysctl.d/99-rootless-ports.conf
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-rootless-ports.conf
 sudo sysctl --system >/dev/null
 sysctl net.ipv4.ip_unprivileged_port_start
 ```
 
-Expected: `net.ipv4.ip_unprivileged_port_start = 0`.
+Expected: `net.ipv4.ip_unprivileged_port_start = 80`.
 
-Tradeoff, restated from the spec: any unprivileged process on this machine may now bind ports below 1024, not only podman.
+80 rather than 0: it still allows publishing :80 and :443, which is the requirement, while leaving :22 and :53 protected from unprivileged squatting.
+
+Tradeoff, restated from the spec: any unprivileged process on this machine may now bind ports at or above :80, not only podman.
 
 - [ ] **Step 3: Edit exports.zsh**
 
@@ -503,6 +529,12 @@ Delete the line `export PATH="$HOME/.docker/bin":$PATH` (a Docker Desktop leftov
 export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
 ```
 
+Then drop the cached copy. `exports.zsh` is loaded via `zinit snippet`, which caches it under `~/.local/share/zinit/snippets/` and compiles a `.zwc` that is newer than the source — so the edit above is silently ignored until the cache is cleared:
+
+```bash
+rm -rf ~/.local/share/zinit/snippets/home--kettle--.config--zsh/exports.zsh
+```
+
 - [ ] **Step 4: Verify in a fresh shell**
 
 ```bash
@@ -510,6 +542,8 @@ zsh -lic 'echo "$DOCKER_HOST"; echo "$PATH" | tr : "\n" | grep -c "\.docker/bin"
 ```
 
 Expected: `unix:///run/user/1000/podman/podman.sock`, then `0`.
+
+Run this in a *new* terminal. A shell already running when the edit was made exported the old `$PATH`, and a nested `zsh -lic` inherits it, so the `.docker/bin` count stays at `1` for that session no matter what the file says.
 
 - [ ] **Step 5: Confirm API clients work**
 
@@ -728,7 +762,7 @@ exec podman run --rm \
   --memory "$MEMORY" \
   --cpus "$CPUS" \
   --network "$NETWORK" \
-  -v "${WORKDIR}:/work:${MOUNT_MODE},U" \
+  -v "${WORKDIR}:/work:${MOUNT_MODE}" \
   -w /work \
   "$@"
 ```
@@ -866,10 +900,45 @@ The spec requires Phase 1 be reproducible on another machine. Create `bin/contai
 # Spec: docs/superpowers/specs/2026-09-13-rootless-container-sandbox-design.md
 set -euo pipefail
 
-USER_NAME="${SUDO_USER:-$USER}"
+# Must run as the target user, not as root: the last step talks to *this* user's
+# systemd manager, and under sudo that would configure root's instead.
+if [[ "$EUID" -eq 0 ]]; then
+  echo "error: run this as your own user, not as root or under sudo." >&2
+  echo "       It calls sudo itself for the steps that need it, and the final" >&2
+  echo "       'systemctl --user' step must target your user manager." >&2
+  exit 1
+fi
+
+USER_NAME="$(id -un)"
+BACKUP_DIR="$HOME/docker-migration/etc-docker-backup"
 
 echo "==> stopping any root Docker daemon"
 sudo systemctl disable --now docker.socket docker.service 2>/dev/null || true
+
+echo "==> backing up /etc/docker to $BACKUP_DIR"
+if [[ -d "$BACKUP_DIR" ]]; then
+  echo "    backup already exists, leaving it untouched"
+elif [[ -d /etc/docker ]]; then
+  mkdir -p "$(dirname "$BACKUP_DIR")"
+  sudo mkdir -p "$BACKUP_DIR"
+  sudo cp -a /etc/docker/. "$BACKUP_DIR"/
+else
+  echo "    no /etc/docker on this machine, nothing to back up"
+fi
+
+echo "==> removing dead Docker daemon config"
+sudo rm -f /etc/docker/daemon.json /etc/docker/daemon.json.pacnew
+
+# ufw-docker exists only to work around root Docker bypassing ufw's INPUT chain;
+# rootless published ports are ordinary user sockets, so it is genuinely obsolete.
+# It must go first: it depends on `docker`, so pacman would otherwise refuse to
+# let podman-docker remove docker ("breaks dependency 'docker' required by ufw-docker").
+echo "==> removing obsolete ufw-docker"
+if pacman -Qq ufw-docker >/dev/null 2>&1; then
+  sudo pacman -Rns --noconfirm ufw-docker
+else
+  echo "    not installed, skipping"
+fi
 
 echo "==> installing the podman stack"
 sudo pacman -S --needed podman podman-docker podman-compose netavark aardvark-dns passt crun
@@ -884,8 +953,10 @@ if [[ -d /etc/docker/certs.d ]]; then
   sudo cp -a /etc/docker/certs.d/. /etc/containers/certs.d/
 fi
 
-echo "==> permitting unprivileged low ports"
-echo 'net.ipv4.ip_unprivileged_port_start=0' | sudo tee /etc/sysctl.d/99-rootless-ports.conf >/dev/null
+# 80, not 0: this satisfies the requirement (rootless containers can publish :80
+# and :443) while leaving :22 and :53 protected from unprivileged squatting.
+echo "==> permitting unprivileged low ports (>= 80)"
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-rootless-ports.conf >/dev/null
 sudo sysctl --system >/dev/null
 
 echo "==> linger and user socket"
