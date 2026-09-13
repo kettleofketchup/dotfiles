@@ -20,6 +20,7 @@ sudo pacman -S --needed --noconfirm docker docker-compose ufw-docker
 echo "==> restoring /etc/docker"
 sudo mkdir -p /etc/docker
 sudo cp -a "$BACKUP/etc-docker-backup/." /etc/docker/
+sudo chown -R root:root /etc/docker
 
 echo "==> removing podman-side host config"
 sudo rm -f /etc/sysctl.d/99-rootless-ports.conf
