@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# container-rollback — restore the root-Docker setup replaced by rootless podman.
+# See docs/superpowers/specs/2026-09-13-rootless-container-sandbox-design.md
+set -euo pipefail
+
+BACKUP="${BACKUP:-/home/kettle/docker-migration}"
+
+if [[ ! -d "$BACKUP/etc-docker-backup" ]]; then
+  echo "error: no backup at $BACKUP/etc-docker-backup" >&2
+  exit 1
+fi
+
+echo "==> stopping rootless podman"
+systemctl --user disable --now podman.socket 2>/dev/null || true
+
+echo "==> restoring docker packages"
+sudo pacman -S --needed --noconfirm docker docker-compose ufw-docker
+# podman-docker Conflicts With docker, so pacman removes it here automatically.
+
+echo "==> restoring /etc/docker"
+sudo mkdir -p /etc/docker
+sudo cp -a "$BACKUP/etc-docker-backup/." /etc/docker/
+
+echo "==> removing podman-side host config"
+sudo rm -f /etc/sysctl.d/99-rootless-ports.conf
+sudo sysctl --system >/dev/null
+
+echo "==> re-enabling the root daemon"
+sudo systemctl enable --now docker.socket
+
+echo "==> done. Remove DOCKER_HOST from .config/zsh/exports.zsh and restow:"
+echo "    git -C /home/kettle/dotfiles checkout -- .config/zsh/exports.zsh"
+echo "    stow -R -d /home/kettle/dotfiles -t /home/kettle ."
