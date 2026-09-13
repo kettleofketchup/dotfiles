@@ -295,10 +295,26 @@ fi
 sect "Compatibility"
 assert "unqualified image names resolve to docker.io" \
   sh -c "podman info --format '{{.Registries}}' | grep -q docker.io"
-assert "<your-registry-host-1> CA installed" \
-  test -f /etc/containers/certs.d/<your-registry-host-1>/ca.crt
-assert "<your-registry-host-2> CA installed" \
-  test -f /etc/containers/certs.d/<your-registry-host-2>/ca.crt
+# Assert every CA Docker held was migrated, WITHOUT naming any host. Registry
+# hostnames are machine-specific infrastructure and do not belong in a public
+# dotfiles repo; comparing against the backup is also more portable.
+CERT_BACKUP="${HOME}/docker-migration/etc-docker-backup/certs.d"
+if [[ -d "$CERT_BACKUP" ]]; then
+  _total=0; _missing=0
+  while IFS= read -r _d; do
+    _total=$((_total + 1))
+    [[ -f "/etc/containers/certs.d/$(basename "$_d")/ca.crt" ]] || _missing=$((_missing + 1))
+  done < <(find "$CERT_BACKUP" -mindepth 1 -maxdepth 1 -type d)
+  if [[ "$_total" -eq 0 ]]; then
+    skip "registry CA migration (Docker held no registry CAs)"
+  elif [[ "$_missing" -eq 0 ]]; then
+    ok "all $_total Docker registry CA(s) migrated"
+  else
+    bad "$_missing of $_total Docker registry CA(s) missing from /etc/containers/certs.d"
+  fi
+else
+  skip "registry CA migration (no Docker CA backup to compare - NOT TESTED)"
+fi
 # <= 80 is the requirement: rootless containers must be able to publish :80 and
 # :443. We set 80 rather than 0 so :22 and :53 stay protected.
 assert "unprivileged low ports permitted (<= 80)" \

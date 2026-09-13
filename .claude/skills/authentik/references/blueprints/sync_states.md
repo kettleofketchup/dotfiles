@@ -8,7 +8,7 @@ How authentik blueprints actually behave on first apply, on reapply, and across 
 
 Gotcha with real production impact: when authentik's discovery watcher picks up a file-backed blueprint, it creates a `BlueprintInstance` row keyed by the file's **path** (e.g. `mounted/cm-authentik-blueprints-ldap/ldap-source.yaml`). The instance's `name` field is populated from `metadata.name` **on first creation only** and is then stable in the DB.
 
-Consequence: if a Helm chart conditionally toggles between two `metadata.name` values (e.g. `ldap-source-disabled` vs `graynet-ldap`) based on a values flag, the **first** name wins — authentik keeps that as the instance's identity forever, even when the file content flips to the other branch. The instance's `content` and `last_applied_hash` fields update, but the visible `name` in the admin UI stays stuck on whatever the file said at first boot.
+Consequence: if a Helm chart conditionally toggles between two `metadata.name` values (e.g. `ldap-source-disabled` vs `<env>-ldap`) based on a values flag, the **first** name wins — authentik keeps that as the instance's identity forever, even when the file content flips to the other branch. The instance's `content` and `last_applied_hash` fields update, but the visible `name` in the admin UI stays stuck on whatever the file said at first boot.
 
 **Fix for this pattern**: don't conditionally switch metadata.name between Helm if/else branches. Either (a) always emit the same `metadata.name` and gate the `entries:` list on the flag, or (b) emit two separate files with different paths so they create two distinct BlueprintInstance rows. Option (a) is cleaner — one file, one row, content changes based on the flag:
 

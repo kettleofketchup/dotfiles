@@ -1,6 +1,6 @@
 # Publishing a GitLab CI/CD Catalog Component
 
-Lessons captured from publishing `inf/s3-sync` (graynet-edge GitLab 18.11.2-EE).
+Lessons captured from publishing `inf/s3-sync` (self-hosted GitLab 18.11.2-EE).
 Use this when building a catalog component repo from scratch on self-managed GitLab.
 
 ## Repo layout
