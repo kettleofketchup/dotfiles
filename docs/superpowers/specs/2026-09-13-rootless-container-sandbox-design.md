@@ -107,9 +107,11 @@ user's own files as the user. This is addressed by policy (§4), not by the kern
    Docker's path; skipping this breaks private registry pulls.
 4. `loginctl enable-linger kettle` so the podman user socket and any `--restart`
    containers survive logout.
-5. `/etc/sysctl.d/99-rootless-ports.conf` with `net.ipv4.ip_unprivileged_port_start=0`,
-   satisfying the ports-below-1024 requirement. **Accepted tradeoff:** any unprivileged
-   process on the box may then bind :80/:443, not only podman.
+5. `/etc/sysctl.d/99-rootless-ports.conf` with `net.ipv4.ip_unprivileged_port_start=80`,
+   satisfying the ports-below-1024 requirement. 80 rather than 0: it still allows :80
+   and :443, while leaving :22 and :53 protected from unprivileged squatting.
+   **Accepted tradeoff:** any unprivileged process on the box may then bind ports at or
+   above :80, not only podman.
 6. Remove `/etc/docker/daemon.json` and `.pacnew` — dead config that would mislead.
 
 `ufw-docker`'s removal is an improvement, not a regression: root Docker bypasses ufw's
