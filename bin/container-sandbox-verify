@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# container-sandbox-verify — assert the rootless container security properties.
+# Spec: docs/superpowers/specs/2026-09-13-rootless-container-sandbox-design.md
+set -uo pipefail
+
+PASS=0; FAIL=0; SKIP=0
+IMG="${IMG:-docker.io/library/alpine:latest}"
+
+ok()   { printf '  \033[32mPASS\033[0m  %s\n' "$1"; PASS=$((PASS+1)); }
+bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; FAIL=$((FAIL+1)); }
+skip() { printf '  \033[33mSKIP\033[0m  %s\n' "$1"; SKIP=$((SKIP+1)); }
+sect() { printf '\n\033[1m%s\033[0m\n' "$1"; }
+
+# assert NAME COMMAND...  -> passes when COMMAND succeeds
+assert() { local n="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$n"; else bad "$n"; fi; }
+# refute NAME COMMAND...  -> passes when COMMAND fails
+refute() { local n="$1"; shift; if "$@" >/dev/null 2>&1; then bad "$n"; else ok "$n"; fi; }
+
+sect "Host privilege"
+refute "no root dockerd running"            pgrep -u root -x dockerd
+refute "user is not in the docker group"    sh -c 'id -nG | grep -qw docker'
+assert "docker resolves to podman"          sh -c 'docker --version 2>&1 | grep -qi podman'
+assert "docker works without sudo"          docker info
+assert "linger enabled for kettle"          sh -c 'loginctl show-user kettle -p Linger | grep -q Linger=yes'
+assert "podman user socket present"         test -S "${XDG_RUNTIME_DIR}/podman/podman.sock"
+assert "DOCKER_HOST points at user socket"  sh -c '[ "${DOCKER_HOST:-}" = "unix://${XDG_RUNTIME_DIR}/podman/podman.sock" ]'
+
+sect "User namespace mapping"
+assert "container uid 0 maps to host 1000" \
+  sh -c "docker run --rm '$IMG' head -1 /proc/self/uid_map | awk '\$1==0 && \$2==1000 {f=1} END{exit !f}'"
+assert "container non-root maps into subuid range" \
+  sh -c "docker run --rm '$IMG' sed -n 2p /proc/self/uid_map | awk '\$2==100000 {f=1} END{exit !f}'"
+
+sect "Host filesystem containment"
+refute "cannot read /etc/shadow via host mount" \
+  docker run --rm -v /:/host:ro "$IMG" cat /host/etc/shadow
+refute "cannot write host root via host mount" \
+  docker run --rm -v /:/host "$IMG" touch /host/sbx-probe
+refute "privileged still cannot write host root" \
+  docker run --rm --privileged -v /:/host "$IMG" touch /host/sbx-probe
+refute "cannot list root-owned /root" \
+  docker run --rm -v /:/host:ro "$IMG" ls /host/root
+
+sect "Storage and runtime"
+assert "storage driver is native overlay" \
+  sh -c "podman info --format '{{.Store.GraphDriverName}}' | grep -qx overlay"
+refute "not falling back to fuse-overlayfs" \
+  sh -c "podman info --format '{{.Store.GraphOptions}}' | grep -q mount_program"
+assert "default runtime is crun" \
+  sh -c "podman info --format '{{.Host.OCIRuntime.Name}}' | grep -qx crun"
+
+sect "Compatibility"
+assert "unqualified image names resolve to docker.io" \
+  sh -c "podman info --format '{{.Registries}}' | grep -q docker.io"
+assert "<your-registry-host-1> CA installed" \
+  test -f /etc/containers/certs.d/<your-registry-host-1>/ca.crt
+assert "<your-registry-host-2> CA installed" \
+  test -f /etc/containers/certs.d/<your-registry-host-2>/ca.crt
+assert "unprivileged low ports permitted" \
+  sh -c "[ \"\$(sysctl -n net.ipv4.ip_unprivileged_port_start)\" = 0 ]"
+
+if [[ "${SKIP_NET:-0}" = 1 ]]; then
+  skip "port 80 publish (SKIP_NET=1)"
+else
+  assert "can publish host port 80" \
+    sh -c "docker run --rm -d --name sbxverify80 -p 80:80 '$IMG' sleep 5 >/dev/null && sleep 1 && docker rm -f sbxverify80 >/dev/null"
+fi
+
+sect "sbx sandbox profile"
+assert "sbx is executable"                 test -x "$HOME/bin/sbx"
+refute "sbx denies network by default"     sbx run "$IMG" wget -q -T3 -O- https://example.com
+assert "sbx allows network with --net"     sbx run --net "$IMG" true
+refute "sbx workdir is read-only"          sbx run "$IMG" touch /work/probe
+refute "sbx rootfs is read-only"           sbx run "$IMG" touch /probe
+assert "sbx tmpfs is writable"             sbx run "$IMG" sh -c 'echo ok > /tmp/x'
+assert "sbx runs as non-root"              sh -c "sbx run '$IMG' id -u | grep -qx 65534"
+
+printf '\n\033[1m%d passed, %d failed, %d skipped\033[0m\n' "$PASS" "$FAIL" "$SKIP"
+[[ "$FAIL" -eq 0 ]]
