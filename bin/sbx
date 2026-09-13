@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# sbx — run a container with hardened defaults, for untrusted code.
+#
+# Rootless podman already prevents a container from harming the host. This
+# wrapper additionally constrains what the code can do *inside* its container:
+# no capabilities, no network, no writable filesystem, bounded CPU/memory/PIDs.
+#
+# Spec: docs/superpowers/specs/2026-09-13-rootless-container-sandbox-design.md
+set -euo pipefail
+
+MEMORY="${SBX_MEMORY:-512m}"
+CPUS="${SBX_CPUS:-1}"
+PIDS="${SBX_PIDS:-128}"
+USERSPEC="${SBX_USER:-65534:65534}"
+TMPFS_SIZE="${SBX_TMPFS_SIZE:-64m}"
+WORKDIR="${SBX_DIR:-$PWD}"
+NETWORK="none"
+MOUNT_MODE="ro"
+
+usage() {
+  cat <<'EOF'
+sbx — run a container with hardened defaults, for untrusted code.
+
+Usage:
+  sbx run [options] IMAGE [COMMAND...]
+
+Options:
+  --net             Allow network access           (default: none)
+  --rw              Mount the workdir read-write    (default: read-only)
+  --dir PATH        Directory mounted at /work      (default: $PWD)
+  --memory SIZE     Memory limit                    (default: 512m)
+  --cpus N          CPU limit                       (default: 1)
+  --pids N          PID limit                       (default: 128)
+  --user UID:GID    User inside the container       (default: 65534:65534)
+  -h, --help        Show this help
+
+Env overrides: SBX_MEMORY SBX_CPUS SBX_PIDS SBX_USER SBX_DIR SBX_TMPFS_SIZE
+
+Examples:
+  sbx run python:3.12 python /work/script.py
+  sbx run --net --rw node:22 npm install
+EOF
+}
+
+[[ $# -eq 0 ]] && { usage; exit 2; }
+
+case "$1" in
+  -h|--help) usage; exit 0 ;;
+  run)       shift ;;
+  *)         echo "sbx: unknown subcommand '$1' (expected 'run')" >&2; exit 2 ;;
+esac
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --net)     NETWORK="bridge"; shift ;;
+    --rw)      MOUNT_MODE="rw";  shift ;;
+    --dir)     WORKDIR="$2";     shift 2 ;;
+    --memory)  MEMORY="$2";      shift 2 ;;
+    --cpus)    CPUS="$2";        shift 2 ;;
+    --pids)    PIDS="$2";        shift 2 ;;
+    --user)    USERSPEC="$2";    shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    --)        shift; break ;;
+    -*)        echo "sbx: unknown option '$1'" >&2; exit 2 ;;
+    *)         break ;;
+  esac
+done
+
+[[ $# -eq 0 ]] && { echo "sbx: no image given" >&2; exit 2; }
+[[ -d "$WORKDIR" ]] || { echo "sbx: workdir '$WORKDIR' does not exist" >&2; exit 2; }
+
+# Use gVisor when available; it intercepts syscalls in userspace, shrinking
+# the host kernel's attack surface. Optional by design — see the spec.
+RUNTIME_ARGS=()
+if command -v runsc >/dev/null 2>&1; then
+  RUNTIME_ARGS=(--runtime runsc)
+fi
+
+exec podman run --rm \
+  "${RUNTIME_ARGS[@]}" \
+  --cap-drop=ALL \
+  --security-opt=no-new-privileges \
+  --read-only \
+  --tmpfs "/tmp:rw,noexec,nosuid,size=${TMPFS_SIZE}" \
+  --user "$USERSPEC" \
+  --pids-limit "$PIDS" \
+  --memory "$MEMORY" \
+  --cpus "$CPUS" \
+  --network "$NETWORK" \
+  -v "${WORKDIR}:/work:${MOUNT_MODE},U" \
+  -w /work \
+  "$@"
