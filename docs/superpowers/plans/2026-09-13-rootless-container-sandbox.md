@@ -186,6 +186,37 @@ bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; FAIL=$((FAIL+1)); }
 skip() { printf '  \033[33mSKIP\033[0m  %s\n' "$1"; SKIP=$((SKIP+1)); }
 sect() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 
+# ---- engine precondition -------------------------------------------------
+# Every check below depends on being able to run a container at all. Without
+# this gate a `refute` passes for the WRONG reason: the command failed because
+# the engine was unreachable, not because the sandbox contained it.
+ENGINE_OK=0
+docker run --rm "$IMG" true >/dev/null 2>&1 && ENGINE_OK=1
+
+engine_or_skip() {
+  if [[ "$ENGINE_OK" -ne 1 ]]; then
+    skip "$1 (engine cannot run containers - NOT TESTED)"
+    return 1
+  fi
+  return 0
+}
+
+# contained NAME <docker run args...>
+# Passes ONLY when the operation fails AND the failure is a genuine denial.
+contained() {
+  local n="$1"; shift
+  engine_or_skip "$n" || return
+  local out rc
+  out="$(docker run --rm "$@" 2>&1)"; rc=$?
+  if [[ "$rc" -eq 0 ]]; then
+    bad "$n (operation SUCCEEDED - not contained)"
+  elif grep -qiE 'permission denied|read-only file system|operation not permitted' <<<"$out"; then
+    ok "$n"
+  else
+    bad "$n (inconclusive - engine error, not a denial: $(head -c 120 <<<"$out" | tr '\n' ' '))"
+  fi
+}
+
 # assert NAME COMMAND...  -> passes when COMMAND succeeds
 assert() { local n="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$n"; else bad "$n"; fi; }
 # refute NAME COMMAND...  -> passes when COMMAND fails
@@ -197,32 +228,34 @@ refute "user is not in the docker group"    sh -c 'id -nG | grep -qw docker'
 assert "docker resolves to podman"          sh -c 'docker --version 2>&1 | grep -qi podman'
 assert "docker works without sudo"          docker info
 assert "linger enabled for kettle"          sh -c 'loginctl show-user kettle -p Linger | grep -q Linger=yes'
-assert "podman user socket present"         test -S "${XDG_RUNTIME_DIR}/podman/podman.sock"
-assert "DOCKER_HOST points at user socket"  sh -c '[ "${DOCKER_HOST:-}" = "unix://${XDG_RUNTIME_DIR}/podman/podman.sock" ]'
+assert "podman user socket present"         test -S "${XDG_RUNTIME_DIR:-}/podman/podman.sock"
+assert "DOCKER_HOST points at user socket"  sh -c '[ "${DOCKER_HOST:-}" = "unix://${XDG_RUNTIME_DIR:-}/podman/podman.sock" ]'
 
 sect "User namespace mapping"
-assert "container uid 0 maps to host 1000" \
+engine_or_skip "container uid 0 maps to host 1000" && assert "container uid 0 maps to host 1000" \
   sh -c "docker run --rm '$IMG' head -1 /proc/self/uid_map | awk '\$1==0 && \$2==1000 {f=1} END{exit !f}'"
-assert "container non-root maps into subuid range" \
+engine_or_skip "container non-root maps into subuid range" && assert "container non-root maps into subuid range" \
   sh -c "docker run --rm '$IMG' sed -n 2p /proc/self/uid_map | awk '\$2==100000 {f=1} END{exit !f}'"
 
 sect "Host filesystem containment"
-refute "cannot read /etc/shadow via host mount" \
-  docker run --rm -v /:/host:ro "$IMG" cat /host/etc/shadow
-refute "cannot write host root via host mount" \
-  docker run --rm -v /:/host "$IMG" touch /host/sbx-probe
-refute "privileged still cannot write host root" \
-  docker run --rm --privileged -v /:/host "$IMG" touch /host/sbx-probe
-refute "cannot list root-owned /root" \
-  docker run --rm -v /:/host:ro "$IMG" ls /host/root
+contained "cannot read /etc/shadow via host mount"  -v /:/host:ro "$IMG" cat /host/etc/shadow
+contained "cannot write host root via host mount"   -v /:/host "$IMG" touch /host/sbx-probe
+contained "privileged still cannot write host root" --privileged -v /:/host "$IMG" touch /host/sbx-probe
+contained "cannot list root-owned /root"            -v /:/host:ro "$IMG" ls /host/root
 
 sect "Storage and runtime"
-assert "storage driver is native overlay" \
-  sh -c "podman info --format '{{.Store.GraphDriverName}}' | grep -qx overlay"
-refute "not falling back to fuse-overlayfs" \
-  sh -c "podman info --format '{{.Store.GraphOptions}}' | grep -q mount_program"
-assert "default runtime is crun" \
-  sh -c "podman info --format '{{.Host.OCIRuntime.Name}}' | grep -qx crun"
+if command -v podman >/dev/null 2>&1; then
+  assert "storage driver is native overlay" \
+    sh -c "podman info --format '{{.Store.GraphDriverName}}' | grep -qx overlay"
+  refute "not falling back to fuse-overlayfs" \
+    sh -c "podman info --format '{{.Store.GraphOptions}}' | grep -q mount_program"
+  assert "default runtime is crun" \
+    sh -c "podman info --format '{{.Host.OCIRuntime.Name}}' | grep -qx crun"
+else
+  skip "storage driver is native overlay (podman not installed - NOT TESTED)"
+  skip "not falling back to fuse-overlayfs (podman not installed - NOT TESTED)"
+  skip "default runtime is crun (podman not installed - NOT TESTED)"
+fi
 
 sect "Compatibility"
 assert "unqualified image names resolve to docker.io" \
@@ -243,12 +276,21 @@ fi
 
 sect "sbx sandbox profile"
 assert "sbx is executable"                 test -x "$HOME/bin/sbx"
-refute "sbx denies network by default"     sbx run "$IMG" wget -q -T3 -O- https://example.com
-assert "sbx allows network with --net"     sbx run --net "$IMG" true
-refute "sbx workdir is read-only"          sbx run "$IMG" touch /work/probe
-refute "sbx rootfs is read-only"           sbx run "$IMG" touch /probe
-assert "sbx tmpfs is writable"             sbx run "$IMG" sh -c 'echo ok > /tmp/x'
-assert "sbx runs as non-root"              sh -c "sbx run '$IMG' id -u | grep -qx 65534"
+if [[ "$ENGINE_OK" -eq 1 && -x "$HOME/bin/sbx" ]]; then
+  refute "sbx denies network by default"     sbx run "$IMG" wget -q -T3 -O- https://example.com
+  assert "sbx allows network with --net"     sbx run --net "$IMG" true
+  refute "sbx workdir is read-only"          sbx run "$IMG" touch /work/probe
+  refute "sbx rootfs is read-only"           sbx run "$IMG" touch /probe
+  assert "sbx tmpfs is writable"             sbx run "$IMG" sh -c 'echo ok > /tmp/x'
+  assert "sbx runs as non-root"              sh -c "sbx run '$IMG' id -u | grep -qx 65534"
+else
+  skip "sbx denies network by default (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx allows network with --net (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx workdir is read-only (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx rootfs is read-only (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx tmpfs is writable (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx runs as non-root (engine or sbx unavailable - NOT TESTED)"
+fi
 
 printf '\n\033[1m%d passed, %d failed, %d skipped\033[0m\n' "$PASS" "$FAIL" "$SKIP"
 [[ "$FAIL" -eq 0 ]]
@@ -261,7 +303,7 @@ chmod +x /home/kettle/dotfiles/bin/container-sandbox-verify
 /home/kettle/dotfiles/bin/container-sandbox-verify; echo "exit=$?"
 ```
 
-Expected: many FAIL lines (`docker resolves to podman`, `podman user socket present`, `sbx is executable`, …) and `exit=1`. A few pass already — `no root dockerd running` passes because the daemon is socket-activated and idle, and `user is not in the docker group` passes because that was never done. That is correct; the suite measures the end state, not the delta.
+Expected: many FAIL lines (`docker resolves to podman`, `sbx is executable`, …) and `exit=1`. A few pass already — `user is not in the docker group` passes because that was never done. Checks that depend on the engine being reachable (`docker run` succeeding) or on podman/sbx being installed — the two userns-mapping checks, the four host-filesystem-containment checks, the three storage/runtime checks, and five of the six sbx-profile checks — report SKIP rather than PASS or FAIL, because the engine cannot run a container yet and neither podman nor sbx exist. `no root dockerd running` may FAIL instead of PASS if `docker.service` is actively running rather than merely socket-activated and idle. That is correct; the suite measures the end state, and a SKIP or FAIL here is not a bug — it means the property has genuinely not been established yet.
 
 - [ ] **Step 3: Commit**
 
