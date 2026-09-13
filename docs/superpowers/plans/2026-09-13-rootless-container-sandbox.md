@@ -108,8 +108,21 @@ set -euo pipefail
 
 BACKUP="${BACKUP:-/home/kettle/docker-migration}"
 
+# Directory existence alone is not enough: an empty or partial backup would
+# restore a Docker with no registry CAs, which fails only later, at the first
+# private-registry pull. Check for the two things that must be there.
 if [[ ! -d "$BACKUP/etc-docker-backup" ]]; then
   echo "error: no backup at $BACKUP/etc-docker-backup" >&2
+  exit 1
+fi
+if [[ ! -f "$BACKUP/etc-docker-backup/daemon.json" ]]; then
+  echo "error: backup at $BACKUP/etc-docker-backup is incomplete: daemon.json missing" >&2
+  echo "       refusing to restore a partial /etc/docker" >&2
+  exit 1
+fi
+if [[ ! -d "$BACKUP/etc-docker-backup/certs.d" ]]; then
+  echo "error: backup at $BACKUP/etc-docker-backup is incomplete: certs.d/ missing" >&2
+  echo "       restoring without registry CAs would break private registry pulls" >&2
   exit 1
 fi
 
@@ -131,9 +144,15 @@ sudo sysctl --system >/dev/null
 echo "==> re-enabling the root daemon"
 sudo systemctl enable --now docker.socket
 
-echo "==> done. Remove DOCKER_HOST from .config/zsh/exports.zsh and restow:"
-echo "    git -C /home/kettle/dotfiles checkout -- .config/zsh/exports.zsh"
-echo "    stow -R -d /home/kettle/dotfiles -t /home/kettle ."
+echo "==> done. One manual step is left:"
+echo "    Delete the DOCKER_HOST export (and its comment) from"
+echo "      /home/kettle/dotfiles/.config/zsh/exports.zsh"
+echo "    by hand -- do not 'git checkout' that file, which would also discard"
+echo "    any unrelated uncommitted edits in it."
+echo "    Then drop the cached zinit snippet so the change is actually picked up:"
+echo "      rm -rf ~/.local/share/zinit/snippets/home--kettle--.config--zsh/exports.zsh"
+echo "    and restow:"
+echo "      stow -R -d /home/kettle/dotfiles -t /home/kettle ."
 ```
 
 - [ ] **Step 6: Verify the rollback script parses and is executable**
@@ -186,10 +205,57 @@ bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; FAIL=$((FAIL+1)); }
 skip() { printf '  \033[33mSKIP\033[0m  %s\n' "$1"; SKIP=$((SKIP+1)); }
 sect() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 
+# ---- engine precondition -------------------------------------------------
+# Every check below depends on being able to run a container at all. Without
+# this gate a `refute` passes for the WRONG reason: the command failed because
+# the engine was unreachable, not because the sandbox contained it.
+ENGINE_OK=0
+docker run --rm "$IMG" true >/dev/null 2>&1 && ENGINE_OK=1
+
+engine_or_skip() {
+  if [[ "$ENGINE_OK" -ne 1 ]]; then
+    skip "$1 (engine cannot run containers - NOT TESTED)"
+    return 1
+  fi
+  return 0
+}
+
+# contained NAME <docker run args...>
+# Passes ONLY when the operation fails AND the failure is a genuine denial.
+contained() {
+  local n="$1"; shift
+  engine_or_skip "$n" || return
+  local out rc
+  out="$(docker run --rm "$@" 2>&1)"; rc=$?
+  if [[ "$rc" -eq 0 ]]; then
+    bad "$n (operation SUCCEEDED - not contained)"
+  elif grep -qiE 'permission denied|read-only file system|operation not permitted' <<<"$out"; then
+    ok "$n"
+  else
+    bad "$n (inconclusive - engine error, not a denial: $(head -c 120 <<<"$out" | tr '\n' ' '))"
+  fi
+}
+
 # assert NAME COMMAND...  -> passes when COMMAND succeeds
 assert() { local n="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$n"; else bad "$n"; fi; }
 # refute NAME COMMAND...  -> passes when COMMAND fails
 refute() { local n="$1"; shift; if "$@" >/dev/null 2>&1; then bad "$n"; else ok "$n"; fi; }
+
+# sbx_denied NAME <sbx run args...>
+# Passes ONLY when the sandboxed operation fails AND the failure is a genuine
+# denial rather than an sbx/engine malfunction.
+sbx_denied() {
+  local n="$1"; shift
+  local out rc
+  out="$(sbx run "$@" 2>&1)"; rc=$?
+  if [[ "$rc" -eq 0 ]]; then
+    bad "$n (operation SUCCEEDED - not sandboxed)"
+  elif grep -qiE 'permission denied|read-only file system|operation not permitted|bad address|network is unreachable|could not resolve|temporary failure in name resolution|name does not resolve' <<<"$out"; then
+    ok "$n"
+  else
+    bad "$n (inconclusive - sbx or engine error, not a denial: $(head -c 120 <<<"$out" | tr '\n' ' '))"
+  fi
+}
 
 sect "Host privilege"
 refute "no root dockerd running"            pgrep -u root -x dockerd
@@ -197,32 +263,34 @@ refute "user is not in the docker group"    sh -c 'id -nG | grep -qw docker'
 assert "docker resolves to podman"          sh -c 'docker --version 2>&1 | grep -qi podman'
 assert "docker works without sudo"          docker info
 assert "linger enabled for kettle"          sh -c 'loginctl show-user kettle -p Linger | grep -q Linger=yes'
-assert "podman user socket present"         test -S "${XDG_RUNTIME_DIR}/podman/podman.sock"
-assert "DOCKER_HOST points at user socket"  sh -c '[ "${DOCKER_HOST:-}" = "unix://${XDG_RUNTIME_DIR}/podman/podman.sock" ]'
+assert "podman user socket present"         test -S "${XDG_RUNTIME_DIR:-}/podman/podman.sock"
+assert "DOCKER_HOST points at user socket"  sh -c '[ "${DOCKER_HOST:-}" = "unix://${XDG_RUNTIME_DIR:-}/podman/podman.sock" ]'
 
 sect "User namespace mapping"
-assert "container uid 0 maps to host 1000" \
+engine_or_skip "container uid 0 maps to host 1000" && assert "container uid 0 maps to host 1000" \
   sh -c "docker run --rm '$IMG' head -1 /proc/self/uid_map | awk '\$1==0 && \$2==1000 {f=1} END{exit !f}'"
-assert "container non-root maps into subuid range" \
+engine_or_skip "container non-root maps into subuid range" && assert "container non-root maps into subuid range" \
   sh -c "docker run --rm '$IMG' sed -n 2p /proc/self/uid_map | awk '\$2==100000 {f=1} END{exit !f}'"
 
 sect "Host filesystem containment"
-refute "cannot read /etc/shadow via host mount" \
-  docker run --rm -v /:/host:ro "$IMG" cat /host/etc/shadow
-refute "cannot write host root via host mount" \
-  docker run --rm -v /:/host "$IMG" touch /host/sbx-probe
-refute "privileged still cannot write host root" \
-  docker run --rm --privileged -v /:/host "$IMG" touch /host/sbx-probe
-refute "cannot list root-owned /root" \
-  docker run --rm -v /:/host:ro "$IMG" ls /host/root
+contained "cannot read /etc/shadow via host mount"  -v /:/host:ro "$IMG" cat /host/etc/shadow
+contained "cannot write host root via host mount"   -v /:/host "$IMG" touch /host/sbx-probe
+contained "privileged still cannot write host root" --privileged -v /:/host "$IMG" touch /host/sbx-probe
+contained "cannot list root-owned /root"            -v /:/host:ro "$IMG" ls /host/root
 
 sect "Storage and runtime"
-assert "storage driver is native overlay" \
-  sh -c "podman info --format '{{.Store.GraphDriverName}}' | grep -qx overlay"
-refute "not falling back to fuse-overlayfs" \
-  sh -c "podman info --format '{{.Store.GraphOptions}}' | grep -q mount_program"
-assert "default runtime is crun" \
-  sh -c "podman info --format '{{.Host.OCIRuntime.Name}}' | grep -qx crun"
+if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+  assert "storage driver is native overlay" \
+    sh -c "podman info --format '{{.Store.GraphDriverName}}' | grep -qx overlay"
+  refute "not falling back to fuse-overlayfs" \
+    sh -c "podman info --format '{{.Store.GraphOptions}}' | grep -q mount_program"
+  assert "default runtime is crun" \
+    sh -c "podman info --format '{{.Host.OCIRuntime.Name}}' | grep -qx crun"
+else
+  skip "storage driver is native overlay (podman not installed or unreachable - NOT TESTED)"
+  skip "not falling back to fuse-overlayfs (podman not installed or unreachable - NOT TESTED)"
+  skip "default runtime is crun (podman not installed or unreachable - NOT TESTED)"
+fi
 
 sect "Compatibility"
 assert "unqualified image names resolve to docker.io" \
@@ -231,8 +299,10 @@ assert "<your-registry-host-1> CA installed" \
   test -f /etc/containers/certs.d/<your-registry-host-1>/ca.crt
 assert "<your-registry-host-2> CA installed" \
   test -f /etc/containers/certs.d/<your-registry-host-2>/ca.crt
-assert "unprivileged low ports permitted" \
-  sh -c "[ \"\$(sysctl -n net.ipv4.ip_unprivileged_port_start)\" = 0 ]"
+# <= 80 is the requirement: rootless containers must be able to publish :80 and
+# :443. We set 80 rather than 0 so :22 and :53 stay protected.
+assert "unprivileged low ports permitted (<= 80)" \
+  sh -c "[ \"\$(sysctl -n net.ipv4.ip_unprivileged_port_start)\" -le 80 ]"
 
 if [[ "${SKIP_NET:-0}" = 1 ]]; then
   skip "port 80 publish (SKIP_NET=1)"
@@ -243,12 +313,21 @@ fi
 
 sect "sbx sandbox profile"
 assert "sbx is executable"                 test -x "$HOME/bin/sbx"
-refute "sbx denies network by default"     sbx run "$IMG" wget -q -T3 -O- https://example.com
-assert "sbx allows network with --net"     sbx run --net "$IMG" true
-refute "sbx workdir is read-only"          sbx run "$IMG" touch /work/probe
-refute "sbx rootfs is read-only"           sbx run "$IMG" touch /probe
-assert "sbx tmpfs is writable"             sbx run "$IMG" sh -c 'echo ok > /tmp/x'
-assert "sbx runs as non-root"              sh -c "sbx run '$IMG' id -u | grep -qx 65534"
+if [[ "$ENGINE_OK" -eq 1 && -x "$HOME/bin/sbx" ]]; then
+  sbx_denied "sbx denies network by default"  "$IMG" wget -q -T3 -O- https://example.com
+  assert "sbx allows network with --net"     sbx run --net "$IMG" true
+  sbx_denied "sbx workdir is read-only"       "$IMG" touch /work/probe
+  sbx_denied "sbx rootfs is read-only"        "$IMG" touch /probe
+  assert "sbx tmpfs is writable"             sbx run "$IMG" sh -c 'echo ok > /tmp/x'
+  assert "sbx runs as non-root"              sh -c "sbx run '$IMG' id -u | grep -qx 65534"
+else
+  skip "sbx denies network by default (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx allows network with --net (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx workdir is read-only (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx rootfs is read-only (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx tmpfs is writable (engine or sbx unavailable - NOT TESTED)"
+  skip "sbx runs as non-root (engine or sbx unavailable - NOT TESTED)"
+fi
 
 printf '\n\033[1m%d passed, %d failed, %d skipped\033[0m\n' "$PASS" "$FAIL" "$SKIP"
 [[ "$FAIL" -eq 0 ]]
@@ -261,7 +340,7 @@ chmod +x /home/kettle/dotfiles/bin/container-sandbox-verify
 /home/kettle/dotfiles/bin/container-sandbox-verify; echo "exit=$?"
 ```
 
-Expected: many FAIL lines (`docker resolves to podman`, `podman user socket present`, `sbx is executable`, …) and `exit=1`. A few pass already — `no root dockerd running` passes because the daemon is socket-activated and idle, and `user is not in the docker group` passes because that was never done. That is correct; the suite measures the end state, not the delta.
+Expected: many FAIL lines (`docker resolves to podman`, `sbx is executable`, …) and `exit=1`. A few pass already — `user is not in the docker group` passes because that was never done. Checks that depend on the engine being reachable (`docker run` succeeding) or on podman/sbx being installed — the two userns-mapping checks, the four host-filesystem-containment checks, the three storage/runtime checks, and five of the six sbx-profile checks — report SKIP rather than PASS or FAIL, because the engine cannot run a container yet and neither podman nor sbx exist. `no root dockerd running` may FAIL instead of PASS if `docker.service` is actively running rather than merely socket-activated and idle. That is correct; the suite measures the end state, and a SKIP or FAIL here is not a bug — it means the property has genuinely not been established yet.
 
 - [ ] **Step 3: Commit**
 
@@ -305,11 +384,14 @@ systemctl is-active docker.socket docker.service; echo "(inactive expected)"
 
 - [ ] **Step 3: Install podman, removing docker**
 
+`ufw-docker` must come off first. It depends on `docker`, so pacman will not let `podman-docker` displace `docker` while it is installed — it refuses with `removing docker breaks dependency 'docker' required by ufw-docker`. Removing it is not a regression: it exists only to work around root Docker bypassing ufw's INPUT chain, and rootless published ports are ordinary user sockets that obey ufw already.
+
 ```bash
+pacman -Qq ufw-docker >/dev/null 2>&1 && sudo pacman -Rns ufw-docker
 sudo pacman -S --needed podman podman-docker podman-compose netavark aardvark-dns passt crun
 ```
 
-pacman will prompt to remove `docker` and `ufw-docker`, because `podman-docker` conflicts with `docker`. Accept. `docker-compose` and `lazydocker` have no hard dependency on `docker` and must remain — confirm they are absent from the removal list before accepting.
+pacman will then prompt to remove `docker`, because `podman-docker` conflicts with it. Accept. `docker-compose` and `lazydocker` have no hard dependency on `docker` and must remain — confirm they are absent from the removal list before accepting.
 
 - [ ] **Step 4: Verify the shim**
 
@@ -426,14 +508,16 @@ Expected: `active`, `Linger=yes`, `socket OK`.
 - [ ] **Step 2: Permit unprivileged low ports**
 
 ```bash
-echo 'net.ipv4.ip_unprivileged_port_start=0' | sudo tee /etc/sysctl.d/99-rootless-ports.conf
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-rootless-ports.conf
 sudo sysctl --system >/dev/null
 sysctl net.ipv4.ip_unprivileged_port_start
 ```
 
-Expected: `net.ipv4.ip_unprivileged_port_start = 0`.
+Expected: `net.ipv4.ip_unprivileged_port_start = 80`.
 
-Tradeoff, restated from the spec: any unprivileged process on this machine may now bind ports below 1024, not only podman.
+80 rather than 0: it still allows publishing :80 and :443, which is the requirement, while leaving :22 and :53 protected from unprivileged squatting.
+
+Tradeoff, restated from the spec: any unprivileged process on this machine may now bind ports at or above :80, not only podman.
 
 - [ ] **Step 3: Edit exports.zsh**
 
@@ -445,6 +529,12 @@ Delete the line `export PATH="$HOME/.docker/bin":$PATH` (a Docker Desktop leftov
 export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock"
 ```
 
+Then drop the cached copy. `exports.zsh` is loaded via `zinit snippet`, which caches it under `~/.local/share/zinit/snippets/` and compiles a `.zwc` that is newer than the source — so the edit above is silently ignored until the cache is cleared:
+
+```bash
+rm -rf ~/.local/share/zinit/snippets/home--kettle--.config--zsh/exports.zsh
+```
+
 - [ ] **Step 4: Verify in a fresh shell**
 
 ```bash
@@ -452,6 +542,8 @@ zsh -lic 'echo "$DOCKER_HOST"; echo "$PATH" | tr : "\n" | grep -c "\.docker/bin"
 ```
 
 Expected: `unix:///run/user/1000/podman/podman.sock`, then `0`.
+
+Run this in a *new* terminal. A shell already running when the edit was made exported the old `$PATH`, and a nested `zsh -lic` inherits it, so the `.docker/bin` count stays at `1` for that session no matter what the file says.
 
 - [ ] **Step 5: Confirm API clients work**
 
@@ -670,7 +762,7 @@ exec podman run --rm \
   --memory "$MEMORY" \
   --cpus "$CPUS" \
   --network "$NETWORK" \
-  -v "${WORKDIR}:/work:${MOUNT_MODE},U" \
+  -v "${WORKDIR}:/work:${MOUNT_MODE}" \
   -w /work \
   "$@"
 ```
@@ -808,10 +900,45 @@ The spec requires Phase 1 be reproducible on another machine. Create `bin/contai
 # Spec: docs/superpowers/specs/2026-09-13-rootless-container-sandbox-design.md
 set -euo pipefail
 
-USER_NAME="${SUDO_USER:-$USER}"
+# Must run as the target user, not as root: the last step talks to *this* user's
+# systemd manager, and under sudo that would configure root's instead.
+if [[ "$EUID" -eq 0 ]]; then
+  echo "error: run this as your own user, not as root or under sudo." >&2
+  echo "       It calls sudo itself for the steps that need it, and the final" >&2
+  echo "       'systemctl --user' step must target your user manager." >&2
+  exit 1
+fi
+
+USER_NAME="$(id -un)"
+BACKUP_DIR="$HOME/docker-migration/etc-docker-backup"
 
 echo "==> stopping any root Docker daemon"
 sudo systemctl disable --now docker.socket docker.service 2>/dev/null || true
+
+echo "==> backing up /etc/docker to $BACKUP_DIR"
+if [[ -d "$BACKUP_DIR" ]]; then
+  echo "    backup already exists, leaving it untouched"
+elif [[ -d /etc/docker ]]; then
+  mkdir -p "$(dirname "$BACKUP_DIR")"
+  sudo mkdir -p "$BACKUP_DIR"
+  sudo cp -a /etc/docker/. "$BACKUP_DIR"/
+else
+  echo "    no /etc/docker on this machine, nothing to back up"
+fi
+
+echo "==> removing dead Docker daemon config"
+sudo rm -f /etc/docker/daemon.json /etc/docker/daemon.json.pacnew
+
+# ufw-docker exists only to work around root Docker bypassing ufw's INPUT chain;
+# rootless published ports are ordinary user sockets, so it is genuinely obsolete.
+# It must go first: it depends on `docker`, so pacman would otherwise refuse to
+# let podman-docker remove docker ("breaks dependency 'docker' required by ufw-docker").
+echo "==> removing obsolete ufw-docker"
+if pacman -Qq ufw-docker >/dev/null 2>&1; then
+  sudo pacman -Rns --noconfirm ufw-docker
+else
+  echo "    not installed, skipping"
+fi
 
 echo "==> installing the podman stack"
 sudo pacman -S --needed podman podman-docker podman-compose netavark aardvark-dns passt crun
@@ -826,8 +953,10 @@ if [[ -d /etc/docker/certs.d ]]; then
   sudo cp -a /etc/docker/certs.d/. /etc/containers/certs.d/
 fi
 
-echo "==> permitting unprivileged low ports"
-echo 'net.ipv4.ip_unprivileged_port_start=0' | sudo tee /etc/sysctl.d/99-rootless-ports.conf >/dev/null
+# 80, not 0: this satisfies the requirement (rootless containers can publish :80
+# and :443) while leaving :22 and :53 protected from unprivileged squatting.
+echo "==> permitting unprivileged low ports (>= 80)"
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-rootless-ports.conf >/dev/null
 sudo sysctl --system >/dev/null
 
 echo "==> linger and user socket"
