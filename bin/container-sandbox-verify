@@ -105,8 +105,10 @@ assert "<your-registry-host-1> CA installed" \
   test -f /etc/containers/certs.d/<your-registry-host-1>/ca.crt
 assert "<your-registry-host-2> CA installed" \
   test -f /etc/containers/certs.d/<your-registry-host-2>/ca.crt
-assert "unprivileged low ports permitted" \
-  sh -c "[ \"\$(sysctl -n net.ipv4.ip_unprivileged_port_start)\" = 0 ]"
+# <= 80 is the requirement: rootless containers must be able to publish :80 and
+# :443. We set 80 rather than 0 so :22 and :53 stay protected.
+assert "unprivileged low ports permitted (<= 80)" \
+  sh -c "[ \"\$(sysctl -n net.ipv4.ip_unprivileged_port_start)\" -le 80 ]"
 
 if [[ "${SKIP_NET:-0}" = 1 ]]; then
   skip "port 80 publish (SKIP_NET=1)"
