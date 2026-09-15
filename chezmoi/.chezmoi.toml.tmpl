@@ -1,0 +1,6 @@
+{{/* Rendered by `chezmoi init` into ~/.config/chezmoi/chezmoi.toml.
+     Per-machine, deliberately not committed. */ -}}
+sourceDir = {{ printf "%s/dotfiles" .chezmoi.homeDir | quote }}
+
+[data]
+    role = {{ promptStringOnce . "role" "machine role (homepc/mac)" | quote }}

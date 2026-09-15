@@ -1,0 +1,9 @@
+[tools]
+bun = "latest"
+chezmoi = "latest"
+claude = "latest"
+codex = "latest"
+gh = "latest"
+go = "latest"
+node = "25.9.0"
+python = "latest"
