@@ -424,3 +424,8 @@ export PATH=$HOME/.opencode/bin:$PATH
 # >>> hookshot completions >>>
 fpath=("/home/kettle/.local/share/zsh/site-functions" $fpath); autoload -Uz compinit && compinit
 # <<< hookshot completions <<<
+
+# Machine-specific shell config: things installed only on this box, plus blocks
+# that CLI installers append to ~/.zshrc on their own. Not tracked in git, so it
+# never follows this repo onto another machine.
+[[ -f ~/.config/zsh/local.zsh ]] && source ~/.config/zsh/local.zsh

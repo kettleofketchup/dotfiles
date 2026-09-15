@@ -16,3 +16,6 @@ tmux-client*
 zinit-offline/zinit-offline.tar.gz
 zinit-offline/.pack-home
 dotfiles.tar
+
+# Machine-local shell config, never shared between machines
+.config/zsh/local.zsh
