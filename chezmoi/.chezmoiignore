@@ -1,0 +1,8 @@
+# Targets chezmoi should NOT manage on this machine.
+# This file is itself a template, and the logic is inverted: you list what to
+# skip, not what to keep.
+#
+# Worked examples (os/hostname branching, prompts, shared fragments) live in
+# ~/.claude/skills/dotfiles/references/machine-differences.md
+#
+# Nothing ignored yet -- the source state is empty.
