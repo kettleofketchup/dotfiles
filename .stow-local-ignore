@@ -40,3 +40,21 @@ plugin-skills
 # Repo conventions, not machine config. Stowed to ~/AGENTS.md it would be picked
 # up as a parent-directory instructions file by agents working anywhere under $HOME.
 ^/AGENTS\.md$
+# Repo-internal git metadata. Stow would link it to ~/.gitmodules, where it is
+# meaningless -- git only reads .gitmodules at a repo root.
+^/\.gitmodules$
+
+# Not recognised by GNU stow -- only .stow-local-ignore (package) and
+# ~/.stow-global-ignore are. Left in the repo but kept out of $HOME, where they
+# were being stowed as inert junk symlinks.
+^/\.stow-ignore$
+^/\.stowignore$
+
+# Per-host package. Stowed explicitly on the Mac: stow -d ~/dotfiles -t ~ mac
+# (anchored so it cannot prune an unrelated directory named "mac" deeper in the tree)
+^/mac$
+
+# chezmoi's territory. stow must never touch these: chezmoi writes real files
+# and would fight stow's symlinks over any shared path.
+^/chezmoi$
+^/\.chezmoiroot$
