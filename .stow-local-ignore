@@ -32,7 +32,7 @@ plugin-skills
 # separately installed skills, so linking this one over it makes `stow -R .`
 # fail with a conflict. Coder workspaces get them instead, via a start script
 # that writes its own ignore list — see apps/coder/manifests/template/main.tf
-# in homelab-cluster.
+# in the cluster repo.
 ^/\.agents$
 ^/\.codex$
 ^/\.openhands$
