@@ -168,13 +168,9 @@ zi wait lucid for \
     atclone'./**/grafanactl completion zsh | sed "s/grafanactl/gcx/g" > _gcx' atpull'%atclone' as'completion' \
   @grafana/grafanactl
 
-zi wait lucid for \
-    from'gh-r' \
-    bpick'*.tar.gz' \
-    sbin'mise/bin/mise -> mise' \
-    atclone'mise/bin/mise completion zsh > _mise' atpull'%atclone' as'completion' \
-    atload'eval "$(mise activate zsh)"' \
-  @jdx/mise
+# mise: system package on Omarchy, zinit elsewhere -- chosen per host by chezmoi
+# (source: ~/dotfiles/chezmoi/dot_config/zsh-host/mise.zsh.tmpl)
+[[ -f ~/.config/zsh-host/mise.zsh ]] && source ~/.config/zsh-host/mise.zsh
 
 zi wait lucid for \
     from'gh-r' \

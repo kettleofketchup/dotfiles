@@ -1,0 +1,21 @@
+# Rendered by chezmoi -- edit ~/dotfiles/chezmoi/dot_config/zsh-host/mise.zsh.tmpl
+# Sourced from ~/.zshrc after zinit is loaded.
+{{ if stat "/usr/share/omarchy" -}}
+# Omarchy ships mise (pacman: mise-bin) and configures it in /etc/mise/conf.d.
+# A zinit-pinned copy lags behind those settings and warns on every start.
+eval "$(/usr/bin/mise activate zsh)"
+_mise_comp="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/_mise"
+if [[ ! -s $_mise_comp || /usr/bin/mise -nt $_mise_comp ]]; then
+  mkdir -p "${_mise_comp:h}" && /usr/bin/mise completion zsh >| "$_mise_comp"
+fi
+source "$_mise_comp" 2>/dev/null && compdef _mise mise
+unset _mise_comp
+{{- else -}}
+zi wait lucid for \
+    from'gh-r' \
+    bpick'*.tar.gz' \
+    sbin'mise/bin/mise -> mise' \
+    atclone'mise/bin/mise completion zsh > _mise' atpull'%atclone' as'completion' \
+    atload'eval "$(mise activate zsh)"' \
+  @jdx/mise
+{{- end }}
