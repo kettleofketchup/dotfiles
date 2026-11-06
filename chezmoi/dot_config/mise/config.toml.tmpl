@@ -1,0 +1,16 @@
+# Rendered by chezmoi -- edit ~/dotfiles/chezmoi/dot_config/mise/config.toml.tmpl
+# mise's global config: tools wanted on every machine.
+[tools]
+bun = "latest"
+chezmoi = "latest"
+go = "latest"
+python = "latest"
+{{- if not (stat "/usr/share/omarchy") }}
+# Omarchy declares these in /etc/mise/conf.d/omarchy-tools.toml, and its
+# migrations remove user-level copies (one emptied this file on 2026-11-06).
+# Only machines without Omarchy need them here.
+claude = "latest"
+codex = "latest"
+gh = "latest"
+node = "latest"
+{{- end }}
