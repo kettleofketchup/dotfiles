@@ -4,12 +4,7 @@
 # Omarchy ships mise (pacman: mise-bin) and configures it in /etc/mise/conf.d.
 # A zinit-pinned copy lags behind those settings and warns on every start.
 eval "$(/usr/bin/mise activate zsh)"
-_mise_comp="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/_mise"
-if [[ ! -s $_mise_comp || /usr/bin/mise -nt $_mise_comp ]]; then
-  mkdir -p "${_mise_comp:h}" && /usr/bin/mise completion zsh >| "$_mise_comp"
-fi
-source "$_mise_comp" 2>/dev/null && compdef _mise mise
-unset _mise_comp
+# Completion comes from ~/.config/zsh/completions.zsh (cached into fpath).
 {{- else -}}
 zi wait lucid for \
     from'gh-r' \
