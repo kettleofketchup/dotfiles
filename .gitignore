@@ -19,3 +19,11 @@ dotfiles.tar
 
 # Machine-local shell config, never shared between machines
 .config/zsh/local.zsh
+
+# Omarchy writes into ~/.config/omarchy, which stow folds into this repo.
+# Installed themes are their own git clones; lock files are runtime state.
+.config/omarchy/themes/
+.config/omarchy/**/*.lock
+
+# Claude desktop's skill-sync cache (per-account)
+.claude/skills/synced/
