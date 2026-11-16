@@ -390,7 +390,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # bun completions
 [ -s "/home/kettle/.bun/_bun" ] && source "/home/kettle/.bun/_bun"
 # i am currenlty moving the just completions to the zsh/completions.zsh and need to move _just to completions/
-if [ -z "$TMUX" ]; then
+if [ -z "$TMUX" ] && [ -z "$HERDR_ENV" ]; then
   tmux attach || tmux new-session
   exit
 fi

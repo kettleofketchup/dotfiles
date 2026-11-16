@@ -61,7 +61,7 @@ onboarding = false
 # Named punctuation such as minus, comma, ampersand, plus, and backtick is also accepted.
 # Most reliable direct bindings are ctrl+letter, function keys, and explicit modified chords.
 # alt+..., cmd/super, and punctuation-with-modifiers may depend on your terminal/tmux setup.
-#prefix = "ctrl+"
+prefix = "ctrl+space"
 
 # Prefix-mode actions
 # help = "prefix+?"
@@ -77,8 +77,8 @@ onboarding = false
 # remove_worktree = ""  # optional, unset by default; opens confirmation
 # rename_workspace = "prefix+shift+w"
 # close_workspace = "prefix+shift+d"
-# previous_workspace = "" # optional, unset by default
-# next_workspace = ""     # optional, unset by default
+previous_workspace = "prefix+shift+k"
+next_workspace = "prefix+shift+j"
 # previous_agent = ""     # optional, unset by default
 # next_agent = ""         # optional, unset by default
 # focus_agent = ""        # optional indexed binding, e.g. "prefix+alt+1..9"
@@ -108,11 +108,11 @@ onboarding = false
 
 # Navigate-mode movement. These local shortcuts win while navigate mode is open.
 # They are independent from focus_pane_*. Do not include prefix+, esc, enter, tab, or 1..9 here.
-# navigate_workspace_up = "up"
-# navigate_workspace_down = "down"
+navigate_workspace_up = ["up", "k"]
+navigate_workspace_down = ["down", "j"]
 # navigate_pane_left = "h"      # left arrow always focuses the pane to the left
-# navigate_pane_down = "j"
-# navigate_pane_up = "k"
+navigate_pane_down = "ctrl+j"
+navigate_pane_up = "ctrl+k"
 # navigate_pane_right = "l"     # right arrow always focuses the pane to the right
 
 # Custom commands use the same binding syntax.
