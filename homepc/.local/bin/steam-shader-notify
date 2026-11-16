@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Notify when Steam starts and finishes background shader pre-compilation.
+# Steam does this work in fossilize_replay processes, one per worker thread.
+set -uo pipefail
+
+poll=5          # seconds between checks
+quiet_polls=2   # polls with no workers before declaring it finished
+steamapps="$HOME/.local/share/Steam/steamapps"
+
+game_names() {
+  # App ids come from the shadercache/<appid>/ path in the workers' arguments.
+  pgrep -af fossilize_replay | grep -o 'shadercache/[0-9]*' | cut -d/ -f2 | sort -u |
+    while read -r id; do
+      name=$(sed -n 's/^[[:space:]]*"name"[[:space:]]*"\(.*\)"/\1/p' "$steamapps/appmanifest_$id.acf" 2>/dev/null)
+      echo "${name:-app $id}"
+    done | paste -sd, | sed 's/,/, /g'
+}
+
+notify() {
+  notify-send --app-name=Steam --icon=steam --urgency=low "$@" 2>/dev/null
+}
+
+running=0 idle=0 started=0
+while :; do
+  workers=$(pgrep -fc fossilize_replay || true)
+  if (( workers > 0 )); then
+    idle=0
+    if (( ! running )); then
+      running=1 started=$SECONDS
+      notify "Steam: compiling shaders" "$(game_names) · $workers processes"
+    fi
+  elif (( running )) && (( ++idle >= quiet_polls )); then
+    running=0
+    took=$(( SECONDS - started ))
+    notify "Steam: shaders done" "took $((took / 60))m$((took % 60))s"
+  fi
+  sleep "$poll"
+done
