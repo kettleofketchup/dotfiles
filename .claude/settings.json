@@ -305,7 +305,6 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus[1m]",
   "hooks": {
     "PostToolUse": [
       {
@@ -381,7 +380,8 @@
     "github@kettleofskills": true,
     "just@kettleofskills": true,
     "mise@kettleofskills": true,
-    "mattpocock-skills@claude-plugins-official": true
+    "mattpocock-skills@claude-plugins-official": true,
+    "cloudflare@cloudflare": true
   },
   "extraKnownMarketplaces": {
     "claude-just-interceptor": {
@@ -394,6 +394,12 @@
       "source": {
         "source": "github",
         "repo": "kettleofketchup/kettleofskills"
+      }
+    },
+    "cloudflare": {
+      "source": {
+        "source": "github",
+        "repo": "cloudflare/skills"
       }
     }
   },
