@@ -276,8 +276,11 @@ zinit wait"2" lucid for \
   "hlissner/zsh-autopair" \
   zsh-users/zsh-autosuggestions \
   OMZ::lib/clipboard.zsh \
-  OMZP::npm \
-  zap-zsh/supercharge
+  OMZP::npm
+
+# supercharge sets `alias ls='ls --color=auto'` on Linux, clobbering the lsd alias from aliases.zsh
+zinit ice wait"2" lucid atload'(( $+commands[lsd] )) && alias ls="lsd --config-file=\"$HOME/.ls.config\""'
+zinit light zap-zsh/supercharge
 
 
 
