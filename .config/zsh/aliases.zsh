@@ -64,3 +64,26 @@ alias pscpu='ps auxf | sort -nr -k 3 | head -5'
 # systemd
 alias mach_list_systemctl="systemctl list-unit-files --state=enabled"
 
+
+# hunk PR review. `hunk gh pr` can't list PRs and ignores the gh login, so pick
+# with fzf and hand it gh's token (needed for private repos and viewed-mark sync).
+#   hpr            pick from open PRs in this repo
+#   hpr -r         pick from PRs requesting your review, across all repos
+#   hpr 123        open PR 123 directly
+hunk() { GH_TOKEN="${GH_TOKEN:-$(gh auth token 2>/dev/null)}" command hunk "$@"; }
+hpr() {
+  if [[ -n $1 && $1 != -r ]]; then hunk gh pr "$@"; return; fi
+  local pick
+  if [[ $1 == -r ]]; then
+    pick=$(gh search prs --review-requested=@me --state=open --limit 100 \
+        --json url,repository,number,title,author \
+        --template '{{range .}}{{.url}}{{"\t"}}{{.repository.nameWithOwner}}#{{.number}}{{"\t"}}{{.author.login}}{{"\t"}}{{.title}}{{"\n"}}{{end}}' |
+      fzf --delimiter='\t' --with-nth=2.. --preview 'gh pr view {1}' --preview-window=right,60%,wrap) || return
+  else
+    pick=$(gh pr list --limit 100 \
+        --json number,title,author,headRefName \
+        --template '{{range .}}{{.number}}{{"\t"}}{{.author.login}}{{"\t"}}{{.headRefName}}{{"\t"}}{{.title}}{{"\n"}}{{end}}' |
+      fzf --delimiter='\t' --preview 'gh pr view {1}' --preview-window=right,60%,wrap) || return
+  fi
+  hunk gh pr "${pick%%$'\t'*}"
+}
