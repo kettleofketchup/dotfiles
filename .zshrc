@@ -308,18 +308,18 @@ TRANSIENT_PROMPT_TRANSIENT_PROMPT='%B%(?.%F{green}❯.%F{red}❯)%f%b $LAST_EXIT
 
 autoload -Uz add-zsh-hook
 
-[[ -f ~/.config/zsh/plugins.zsh ]] && zinit snippet ~/.config/zsh/plugins.zsh
-[[ -f ~/.config/zsh/history.zsh ]] && zinit snippet ~/.config/zsh/history.zsh
+[[ -f ~/.config/zsh/plugins.zsh ]] && source ~/.config/zsh/plugins.zsh
+[[ -f ~/.config/zsh/history.zsh ]] && source ~/.config/zsh/history.zsh
 # completions.zsh loaded earlier (before zicompinit)
 
-[[ -f ~/.config/zsh/keys.zsh ]] && zinit snippet ~/.config/zsh/keys.zsh
-[[ -f ~/.config/zsh/settings.zsh ]] && zinit snippet ~/.config/zsh/settings.zsh
+[[ -f ~/.config/zsh/keys.zsh ]] && source ~/.config/zsh/keys.zsh
+[[ -f ~/.config/zsh/settings.zsh ]] && source ~/.config/zsh/settings.zsh
 
 
 # styles.zsh loaded via fzf-tab atload
 # [[ -f ~/.config/zsh/styles.zsh ]] && zinit snippet ~/.config/zsh/styles.zsh
-[[ -f ~/.config/zsh/exports.zsh ]] && zinit snippet ~/.config/zsh/exports.zsh
-[[ -f ~/.config/zsh/aliases.zsh ]] && zinit snippet ~/.config/zsh/aliases.zsh
+[[ -f ~/.config/zsh/exports.zsh ]] && source ~/.config/zsh/exports.zsh
+[[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
 
 # zinit load "zap-zsh/atmachine"
 #[[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
