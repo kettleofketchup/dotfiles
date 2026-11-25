@@ -194,14 +194,21 @@ zi wait lucid for \
     sbin"**/gh" atclone"./**/gh completion -s zsh > _gh" atpull"%atclone" as"completion"\
   cli/cli
 
-# hunk diff viewer; hunk-goodies adds viewed marks (V) that sync with GitHub PRs.
-# Update with `zinit update modem-dev/hunk`, not `hunk update`, so zinit owns the binary.
+# gh-dash: PR/issue dashboard with CI status, run as `gh-dash`
 zi wait lucid for \
     from'gh-r' \
-    sbin'**/hunk -> hunk' \
-    atclone'./hunkdiff-*/hunk completion zsh > _hunk; ./hunkdiff-*/hunk extension install babhishek21/hunk-goodies --yes 2>/dev/null || ./hunkdiff-*/hunk extension update hunk-goodies' \
-    atpull'%atclone' as'completion' \
-  modem-dev/hunk
+    sbin'gh-dash* -> gh-dash' \
+  @dlvhdr/gh-dash
+
+# diffnav: file-tree diff pager for gh-dash (pager.diff); renders through delta
+zi wait lucid for \
+    from'gh-r' \
+    sbin'**/diffnav -> diffnav' \
+  @dlvhdr/diffnav \
+    from'gh-r' bpick'*x86_64-unknown-linux-gnu*' \
+    sbin'**/delta -> delta' \
+    atclone'./delta-*/delta --generate-completion zsh > _delta' atpull'%atclone' as'completion' \
+  @dandavison/delta
 
 
 zinit ice depth=1 id-as"tpm" lucid \

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Review a GitHub pull request in hunk. Used by gh-dash's `H` keybinding.
+#
+#   gh-hunk <owner/repo> <number>
+#
+# Tries `hunk gh pr` first: that mode knows the PR, so hunk-goodies can sync
+# viewed marks to GitHub. GitHub refuses diffs over 20,000 lines (HTTP 406),
+# which large renames hit even on small PRs. For those, fall back to diffing
+# the PR in its local clone under ~/git_repos, where git detects renames.
+# Viewed marks still work in the fallback but stay local.
+set -uo pipefail
+
+repo=${1:?usage: gh-hunk <owner/repo> <number>}
+pr=${2:?usage: gh-hunk <owner/repo> <number>}
+repos_dir=${GH_HUNK_REPOS_DIR:-$HOME/git_repos}
+
+pause() {
+  printf '\n%s\n' "$*" >&2
+  read -rsn1 -p 'Press any key to return.' </dev/tty
+  echo
+  exit 1
+}
+
+export GH_TOKEN="${GH_TOKEN:-$(gh auth token 2>/dev/null)}"
+
+hunk gh pr "$pr" --repo "$repo" && exit 0
+
+# Only fall back when GitHub refused the diff as too large.
+probe=$(gh api -H 'Accept: application/vnd.github.diff' "repos/$repo/pulls/$pr" 2>&1 >/dev/null)
+[[ $probe == *'HTTP 406'* ]] || pause "hunk gh pr failed (see above)."
+
+# Find a local clone whose origin points at this repo (case-insensitive).
+clone=
+for d in "$repos_dir"/*/; do
+  url=$(git -C "$d" remote get-url origin 2>/dev/null) || continue
+  url=${url%.git}
+  if [[ ${url,,} == *[:/]"${repo,,}" ]]; then clone=${d%/}; break; fi
+done
+[[ -n $clone ]] ||
+  pause "GitHub won't serve this diff (over 20,000 lines) and no clone of $repo is in $repos_dir."
+
+base=$(gh pr view "$pr" --repo "$repo" --json baseRefName --jq .baseRefName) ||
+  pause "Couldn't look up PR #$pr."
+echo "Diff too large for GitHub; diffing #$pr locally in $clone (viewed marks stay local)." >&2
+
+# Fetch into FETCH_HEAD only, so the clone gains no new branches or refs.
+git -C "$clone" fetch -q origin "$base" "pull/$pr/head" || pause "git fetch failed in $clone."
+fetch_head=$(git -C "$clone" rev-parse --git-path FETCH_HEAD)
+[[ $fetch_head == /* ]] || fetch_head=$clone/$fetch_head
+base_sha=$(sed -n '1p' "$fetch_head" | cut -f1)
+head_sha=$(sed -n '2p' "$fetch_head" | cut -f1)
+merge_base=$(git -C "$clone" merge-base "$base_sha" "$head_sha") ||
+  pause "Couldn't find the merge base of #$pr."
+
+cd "$clone" && exec hunk diff "$merge_base" "$head_sha"
