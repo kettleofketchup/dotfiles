@@ -39,6 +39,14 @@ instruction; that must not happen again.
 `includeCoAuthoredBy: false` is set in `~/.claude/settings.json` as the harness-level
 backstop, but the rule stands on its own even where that setting does not apply.
 
+## Waiting on Long-Running Jobs — Don't Poll
+
+Never wait for a job with a sleep loop or a sleep substitute (`read -t N < /dev/zero`,
+`python3 -c 'time.sleep()'`, busy loops). Start the job with `run_in_background: true`
+and wait for its completion notification, or use the Monitor tool with an until-loop.
+`read -t` on `/dev/zero` doesn't wait: it spins at 100% CPU and segfaulted zsh on
+2026-11-25. A PreToolUse hook (`.claude/hooks/fake-sleep-nudge.py`) blocks that form.
+
 ## Git in Submodules and Subdirectories
 
 Use `git -C <path>` to run git commands in submodules or subdirectories. Do NOT `cd` into a directory to run git commands — `cd` causes permission and hook issues.
