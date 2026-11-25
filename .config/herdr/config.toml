@@ -127,6 +127,12 @@ navigate_pane_up = "ctrl+k"
 # command = "lazygit"
 # width = "80%"
 # height = "80%"
+[[keys.command]]
+key = "prefix+slash"
+type = "popup"
+command = "$HOME/.local/bin/herdr-agent-search"
+width = "90%"
+height = "80%"
 
 # Legacy indexed shortcut config is still parsed for compatibility.
 # Prefer switch_tab, switch_workspace, and focus_agent for new configs.
@@ -246,6 +252,10 @@ navigate_pane_up = "ctrl+k"
 
 # Background notification popup delivery
 show_agent_labels_on_pane_borders = true
+
+# pr/branch tokens come from herdr-agent-labels (chezmoi, 30-minute timer).
+[ui.sidebar.agents.rows_by_agent]
+claude = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["$pr", "$branch"]]
 [ui.toast]
 # off = disable pop-up notifications
 # herdr = show in-app toasts

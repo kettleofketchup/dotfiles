@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Fuzzy-search herdr Claude agents by title, PR, branch, workspace:tab or cwd; Enter focuses.
+set -euo pipefail
+
+fzf_bin=$(command -v fzf || echo "$HOME/.local/share/zinit/polaris/bin/fzf")
+
+pane=$("$HOME/.local/bin/herdr-agent-labels" --list |
+  "$fzf_bin" --delimiter='\t' --with-nth=2.. --tabstop=2 \
+    --prompt='agent> ' --header='title  pr  branch  workspace:tab  cwd' |
+  cut -f1) || exit 0
+
+[ -n "$pane" ] && herdr agent focus "$pane" >/dev/null

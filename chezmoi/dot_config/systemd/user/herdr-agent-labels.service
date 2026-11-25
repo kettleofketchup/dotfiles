@@ -1,0 +1,6 @@
+[Unit]
+Description=Label herdr Claude panes with PR and branch
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/herdr-agent-labels

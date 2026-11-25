@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Label herdr Claude panes with the PR and branch their session is working on.
+
+Default mode reports `pr` and `branch` tokens on each Claude pane. `--list`
+prints one TSV row per Claude agent for herdr-agent-search.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+PROJECTS = Path.home() / ".claude" / "projects"
+SOURCE = "labels"
+PR_RE = re.compile(
+    r"https?://github\.com/[\w.-]+/[\w.-]+/pull/(?P<gh>\d+)"
+    r"|https?://[\w.-]+(?:/[\w.-]+)+/-/merge_requests/(?P<gl>\d+)"
+)
+
+
+def project_dir(cwd: str, root: Path = PROJECTS) -> Path:
+    return root / re.sub(r"[^A-Za-z0-9]", "-", cwd)
+
+
+def find_transcript(cwd: str, session_id: str, root: Path = PROJECTS) -> Path | None:
+    direct = project_dir(cwd, root) / f"{session_id}.jsonl"
+    if direct.is_file():
+        return direct
+    return next(root.glob(f"*/{session_id}.jsonl"), None)
+
+
+def read_tail(path: Path, limit: int = 4_000_000) -> list[dict]:
+    try:
+        with path.open("rb") as f:
+            size = f.seek(0, os.SEEK_END)
+            f.seek(max(0, size - limit))
+            data = f.read()
+    except OSError:
+        return []
+    lines = data.split(b"\n")
+    if size > limit:
+        lines = lines[1:]
+    entries = []
+    for line in lines:
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(entry, dict):
+            entries.append(entry)
+    return entries
+
+
+def extract(entries: list[dict]) -> tuple[str | None, str | None]:
+    branch = pr = None
+    for entry in reversed(entries):
+        if branch is None and entry.get("gitBranch"):
+            branch = entry["gitBranch"]
+        if pr is None:
+            matches = list(PR_RE.finditer(json.dumps(entry)))
+            if matches:
+                m = matches[-1]
+                pr = f"#{m['gh']}" if m["gh"] else f"!{m['gl']}"
+        if branch and pr:
+            break
+    return branch, pr
+
+
+def herdr(*args: str) -> dict:
+    out = subprocess.run(["herdr", *args], capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)["result"]
+
+
+def claude_agents() -> list[dict]:
+    return [a for a in herdr("agent", "list")["agents"] if a.get("agent") == "claude"]
+
+
+def labels_for(agent: dict) -> tuple[str | None, str | None]:
+    session = (agent.get("agent_session") or {}).get("value")
+    cwd = agent.get("foreground_cwd") or agent.get("cwd") or ""
+    path = find_transcript(cwd, session) if session else None
+    return extract(read_tail(path)) if path else (None, None)
+
+
+def report(agent: dict, branch: str | None, pr: str | None) -> None:
+    args = ["pane", "report-metadata", agent["pane_id"], "--source", SOURCE, "--seq", str(time.time_ns())]
+    for name, value in (("pr", pr), ("branch", branch)):
+        args += ["--token", f"{name}={value}"] if value else ["--clear-token", name]
+    subprocess.run(["herdr", *args], capture_output=True, check=False)
+
+
+def list_rows(agents: list[dict]) -> None:
+    workspaces = {w["workspace_id"]: w["label"] for w in herdr("workspace", "list")["workspaces"]}
+    tabs = {t["tab_id"]: t["label"] for t in herdr("tab", "list")["tabs"]}
+    for agent in agents:
+        branch, pr = labels_for(agent)
+        where = f"{workspaces.get(agent['workspace_id'], agent['workspace_id'])}:{tabs.get(agent['tab_id'], agent['tab_id'])}"
+        row = [agent["pane_id"], agent.get("terminal_title_stripped") or "", pr or "", branch or "", where, agent.get("foreground_cwd") or ""]
+        print("\t".join(c.replace("\t", " ") for c in row))
+
+
+def main() -> int:
+    try:
+        agents = claude_agents()
+    except (OSError, subprocess.CalledProcessError, ValueError, KeyError):
+        return 0
+    if "--list" in sys.argv[1:]:
+        list_rows(agents)
+        return 0
+    for agent in agents:
+        report(agent, *labels_for(agent))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

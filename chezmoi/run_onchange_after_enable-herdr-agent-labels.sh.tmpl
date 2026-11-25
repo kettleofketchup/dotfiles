@@ -1,0 +1,7 @@
+{{ if lookPath "herdr" -}}
+#!/usr/bin/env bash
+# unit hash: {{ include "dot_config/systemd/user/herdr-agent-labels.timer" | sha256sum }} {{ include "dot_config/systemd/user/herdr-agent-labels.service" | sha256sum }}
+set -eu
+systemctl --user daemon-reload
+systemctl --user enable --now herdr-agent-labels.timer
+{{ end -}}

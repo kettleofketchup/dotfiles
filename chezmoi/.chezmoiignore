@@ -5,4 +5,11 @@
 # Worked examples (os/hostname branching, prompts, shared fragments) live in
 # ~/.claude/skills/dotfiles/references/machine-differences.md
 #
-# Nothing ignored yet -- the source state is empty.
+{{ if not (lookPath "herdr") }}
+.local/bin/herdr-agent-labels
+.local/bin/herdr-agent-search
+.config/systemd/user/herdr-agent-labels.service
+.config/systemd/user/herdr-agent-labels.timer
+{{ end }}
+
+**/__pycache__
