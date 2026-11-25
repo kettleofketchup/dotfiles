@@ -194,6 +194,15 @@ zi wait lucid for \
     sbin"**/gh" atclone"./**/gh completion -s zsh > _gh" atpull"%atclone" as"completion"\
   cli/cli
 
+# hunk diff viewer; hunk-goodies adds viewed marks (V) that sync with GitHub PRs.
+# Update with `zinit update modem-dev/hunk`, not `hunk update`, so zinit owns the binary.
+zi wait lucid for \
+    from'gh-r' \
+    sbin'**/hunk -> hunk' \
+    atclone'./hunkdiff-*/hunk completion zsh > _hunk; ./hunkdiff-*/hunk extension install babhishek21/hunk-goodies --yes 2>/dev/null || ./hunkdiff-*/hunk extension update hunk-goodies' \
+    atpull'%atclone' as'completion' \
+  modem-dev/hunk
+
 
 zinit ice depth=1 id-as"tpm" lucid \
     atclone"mkdir -p ~/.tmux/plugins && ln -sfn \$PWD ~/.tmux/plugins/tpm" \
