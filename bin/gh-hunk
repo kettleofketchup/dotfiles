@@ -4,10 +4,11 @@
 #   gh-hunk <owner/repo> <number>
 #
 # Tries `hunk gh pr` first: that mode knows the PR, so hunk-goodies can sync
-# viewed marks to GitHub. GitHub refuses diffs over 20,000 lines (HTTP 406),
-# which large renames hit even on small PRs. For those, fall back to diffing
-# the PR in its local clone under ~/git_repos, where git detects renames.
-# Viewed marks still work in the fallback but stay local.
+# viewed marks to GitHub. If that fails (usually HTTP 406: GitHub refuses
+# diffs over 20,000 lines, which large renames hit even on small PRs), fall
+# back to diffing the PR in its local clone under ~/git_repos, where git
+# detects renames. Viewed marks still work there but stay local. Each
+# fallback is logged to ~/.local/state/gh-hunk.log.
 set -uo pipefail
 
 repo=${1:?usage: gh-hunk <owner/repo> <number>}
@@ -24,10 +25,14 @@ pause() {
 export GH_TOKEN="${GH_TOKEN:-$(gh auth token 2>/dev/null)}"
 
 hunk gh pr "$pr" --repo "$repo" && exit 0
+status=$?
+stty sane 2>/dev/null # hunk can exit without restoring the terminal
 
-# Only fall back when GitHub refused the diff as too large.
+# Record why GitHub refused, then fall back to the local clone whatever the cause.
+log=${XDG_STATE_HOME:-$HOME/.local/state}/gh-hunk.log
+mkdir -p "${log%/*}"
 probe=$(gh api -H 'Accept: application/vnd.github.diff' "repos/$repo/pulls/$pr" 2>&1 >/dev/null)
-[[ $probe == *'HTTP 406'* ]] || pause "hunk gh pr failed (see above)."
+printf '%s %s#%s hunk_exit=%s probe=%q\n' "$(date -Is)" "$repo" "$pr" "$status" "$probe" >>"$log"
 
 # Find a local clone whose origin points at this repo (case-insensitive).
 clone=
@@ -37,11 +42,11 @@ for d in "$repos_dir"/*/; do
   if [[ ${url,,} == *[:/]"${repo,,}" ]]; then clone=${d%/}; break; fi
 done
 [[ -n $clone ]] ||
-  pause "GitHub won't serve this diff (over 20,000 lines) and no clone of $repo is in $repos_dir."
+  pause "hunk gh pr failed (${probe:-exit $status}) and no clone of $repo is in $repos_dir."
 
 base=$(gh pr view "$pr" --repo "$repo" --json baseRefName --jq .baseRefName) ||
   pause "Couldn't look up PR #$pr."
-echo "Diff too large for GitHub; diffing #$pr locally in $clone (viewed marks stay local)." >&2
+echo "GitHub couldn't serve #$pr; diffing it locally in $clone (viewed marks stay local)." >&2
 
 # Fetch into FETCH_HEAD only, so the clone gains no new branches or refs.
 git -C "$clone" fetch -q origin "$base" "pull/$pr/head" || pause "git fetch failed in $clone."

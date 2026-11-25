@@ -1,0 +1,26 @@
+{
+  "name": "hunk-goodies",
+  "version": "0.1.1",
+  "description": "Useful little things for Hunk: practical enhancements for everyday review workflows",
+  "keywords": ["hunk", "hunk-extension", "diff", "code-review"],
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "hunk": {
+    "apiVersion": 32,
+    "extensions": ["./index.tsx"]
+  },
+  "devDependencies": {
+    "@opentui/core": "^0.1.0",
+    "@opentui/react": "^0.1.0",
+    "@types/react": "^19.0.0",
+    "@types/node": "^22.0.0",
+    "hunkdiff": "^0.24.1",
+    "react": "^19.0.0",
+    "typescript": "^5.8.0",
+    "@types/bun": "latest"
+  },
+  "module": "index.tsx",
+  "type": "module"
+}
